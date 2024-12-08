@@ -1,6 +1,7 @@
 import React, { Fragment, useEffect, useState } from "react";
 import Edit from "./Edit.js";
 import "../css/List.css";
+import NetWorthGraph from "./Graph.js";
 
 const List = () => {
   const [networths, setNetworths] = useState([]);
@@ -89,6 +90,9 @@ const List = () => {
           ))}
         </tbody>
       </table>
+      <div className="graph-container mt-5">
+        <NetWorthGraph networths={networths} />
+      </div>
     </Fragment>
   );
 };
