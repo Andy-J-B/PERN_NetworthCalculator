@@ -1,5 +1,6 @@
 import React, { Fragment, useEffect, useState } from "react";
 import Edit from "./Edit.js";
+import "../css/List.css";
 
 const List = () => {
   const [networths, setNetworths] = useState([]);

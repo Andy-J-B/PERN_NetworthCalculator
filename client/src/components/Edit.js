@@ -1,4 +1,5 @@
 import React, { Fragment, useState } from "react";
+import "../css/Edit.css";
 
 const Editnetworth = ({ networth }) => {
   const [today_date, set_today_date] = useState(networth.today_date);
@@ -84,9 +85,7 @@ const Editnetworth = ({ networth }) => {
       >
         Edit
       </button>
-      {/*
-        id = id10
-         */}
+
       <div
         className="modal"
         id={`id${networth.networth_id}`}

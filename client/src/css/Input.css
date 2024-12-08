@@ -1,0 +1,70 @@
+/* Form Container Styling */
+.form-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px 30px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f7f7f7, #eaeaea);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  font-family: "Arial", sans-serif;
+}
+
+/* Form Title */
+.form-container h1 {
+  font-size: 26px;
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+  font-weight: bold;
+  text-transform: capitalize;
+  letter-spacing: 1px;
+}
+
+/* Form Styling */
+.form-container form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+/* Input Fields */
+.form-container form input {
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  transition: all 0.3s ease;
+}
+
+.form-container form input:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 6px rgba(52, 152, 219, 0.5);
+}
+/* Full-Width Button */
+.form-container form button {
+  grid-column: 1 / -1; /* Makes the button span across all columns */
+  width: 100%; /* Ensure it spans the full container width */
+  padding: 12px 15px;
+  font-size: 16px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.form-container form button:hover {
+  background-color: #219150;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+.form-container form button:active {
+  transform: translateY(0);
+}

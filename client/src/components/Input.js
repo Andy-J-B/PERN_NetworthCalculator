@@ -1,4 +1,5 @@
 import React, { Fragment, useState } from "react";
+import "../css/Input.css";
 
 const Input = () => {
   const initialValues = {
@@ -45,65 +46,60 @@ const Input = () => {
 
   return (
     <Fragment>
-      <h1 className="text-center mt-5">Networth Calculator</h1>
-
-      <form className="d-flex mt-5" onSubmit={onSubmitForm}>
-        <input
-          type="number"
-          id="cash_on_hand"
-          name="cash_on_hand"
-          className="form-control"
-          value={allValues.cash_on_hand}
-          onChange={changeHandler}
-          placeholder="Cash On Hand"
-        ></input>
-        <input
-          type="number"
-          id="cash_in_bank"
-          name="cash_in_bank"
-          className="form-control"
-          value={allValues.cash_in_bank}
-          onChange={changeHandler}
-          placeholder="Cash In Bank"
-        ></input>
-        <input
-          type="number"
-          id="accounts_receivable"
-          name="accounts_receivable"
-          className="form-control"
-          value={allValues.accounts_receivable}
-          onChange={changeHandler}
-          placeholder="Accounts Receivable"
-        ></input>
-        <input
-          type="number"
-          id="accounts_payable"
-          name="accounts_payable"
-          className="form-control"
-          value={allValues.accounts_payable}
-          onChange={changeHandler}
-          placeholder="Accounts Payable"
-        ></input>
-        <input
-          type="number"
-          id="canada_stock"
-          name="canada_stock"
-          className="form-control"
-          value={allValues.canada_stock}
-          onChange={changeHandler}
-          placeholder="Canada Stocks"
-        ></input>
-        <input
-          type="number"
-          id="us_stock"
-          name="us_stock"
-          className="form-control"
-          value={allValues.us_stock}
-          onChange={changeHandler}
-          placeholder="US Stocks"
-        ></input>
-        <button className="btn btn-success">Add</button>
-      </form>
+      <div className="form-container">
+        <h1>Net Worth Calculator</h1>
+        <form onSubmit={onSubmitForm}>
+          <input
+            type="number"
+            id="cash_on_hand"
+            name="cash_on_hand"
+            value={allValues.cash_on_hand}
+            onChange={changeHandler}
+            placeholder="Cash On Hand"
+          />
+          <input
+            type="number"
+            id="cash_in_bank"
+            name="cash_in_bank"
+            value={allValues.cash_in_bank}
+            onChange={changeHandler}
+            placeholder="Cash In Bank"
+          />
+          <input
+            type="number"
+            id="accounts_receivable"
+            name="accounts_receivable"
+            value={allValues.accounts_receivable}
+            onChange={changeHandler}
+            placeholder="Accounts Receivable"
+          />
+          <input
+            type="number"
+            id="accounts_payable"
+            name="accounts_payable"
+            value={allValues.accounts_payable}
+            onChange={changeHandler}
+            placeholder="Accounts Payable"
+          />
+          <input
+            type="number"
+            id="canada_stock"
+            name="canada_stock"
+            value={allValues.canada_stock}
+            onChange={changeHandler}
+            placeholder="Canada Stocks"
+          />
+          <input
+            type="number"
+            id="us_stock"
+            name="us_stock"
+            value={allValues.us_stock}
+            onChange={changeHandler}
+            placeholder="US Stocks"
+          />
+          <button type="submit">Add</button>
+        </form>
+      </div>
     </Fragment>
   );
 };
