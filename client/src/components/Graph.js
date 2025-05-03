@@ -1,5 +1,6 @@
 import React from "react";
 import { Line } from "react-chartjs-2";
+import regression from "regression";
 import {
   Chart as ChartJS,
   LineElement,
@@ -9,7 +10,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import "../css/Graph.css"; // Import the CSS file
+import "../css/Graph.css";
 
 ChartJS.register(
   LineElement,
@@ -20,71 +21,64 @@ ChartJS.register(
   Legend
 );
 
-const getLinearRegression = (x, y) => {
-  const n = x.length;
-  const xMean = x.reduce((a, b) => a + b) / n;
-  const yMean = y.reduce((a, b) => a + b) / n;
-
-  const numerator = x.reduce(
-    (sum, xi, i) => sum + (xi - xMean) * (y[i] - yMean),
-    0
-  );
-  const denominator = x.reduce((sum, xi) => sum + Math.pow(xi - xMean, 2), 0);
-
-  const slope = numerator / denominator;
-  const intercept = yMean - slope * xMean;
-
-  return { slope, intercept };
-};
-
-const yearsFromNow = (date1, date2) =>
-  (date2 - date1) / (1000 * 60 * 60 * 24 * 365.25);
-
 const NetWorthGraph = ({ networths }) => {
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "short", day: "numeric" };
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", options);
+    return new Date(dateString).toLocaleDateString("en-US", options);
   };
 
   if (!networths || networths.length === 0) {
     return <p>No net worth data available.</p>;
   }
 
-  console.log(networths);
-  const baseDate = new Date(networths[0].today_date);
-  const xValues = networths.map((entry) =>
-    yearsFromNow(baseDate, new Date(entry.today_date))
-  );
-  const totalNetWorths = networths.map((entry) =>
-    parseFloat(entry.total_networth)
-  );
-  const totalAssets = networths.map(
+  const baseDate = new Date(networths[0].today_date).getTime();
+  const daysSinceStart = (date) =>
+    (new Date(date).getTime() - baseDate) / (1000 * 3600 * 24);
+
+  const regressionNetWorth = networths.map((entry) => [
+    daysSinceStart(entry.today_date),
+    parseFloat(entry.total_networth),
+  ]);
+
+  const regressionAssets = networths.map((entry) => {
+    const totalAssets =
+      parseFloat(entry.cash_on_hand || 0) +
+      parseFloat(entry.cash_in_bank || 0) +
+      parseFloat(entry.us_stock || 0) +
+      parseFloat(entry.canada_stock || 0) +
+      parseFloat(entry.accounts_receivable || 0);
+    return [daysSinceStart(entry.today_date), totalAssets];
+  });
+
+  const resultNetWorth = regression.linear(regressionNetWorth);
+  const resultAssets = regression.linear(regressionAssets);
+
+  const daysInYear = 365.25;
+  const lastX = regressionNetWorth.at(-1)[0];
+
+  const futureNetWorth5 = resultNetWorth.predict(lastX + daysInYear * 5)[1];
+  const futureNetWorth10 = resultNetWorth.predict(lastX + daysInYear * 10)[1];
+  const futureAssets5 = resultAssets.predict(lastX + daysInYear * 5)[1];
+  const futureAssets10 = resultAssets.predict(lastX + daysInYear * 10)[1];
+
+  const labels = networths.map((entry) => formatDate(entry.today_date));
+  const values = networths.map((entry) => parseFloat(entry.total_networth));
+
+  const assetValues = networths.map(
     (entry) =>
-      parseFloat(entry.cash_on_hand) +
-      parseFloat(entry.cash_in_bank) +
-      parseFloat(entry.accounts_receivable) +
-      parseFloat(entry.canada_stock) +
-      parseFloat(entry.us_stock)
-  );
-
-  const netWorthModel = getLinearRegression(xValues, totalNetWorths);
-  const assetModel = getLinearRegression(xValues, totalAssets);
-
-  const predictYears = [5, 10];
-  const netWorthPredictions = predictYears.map(
-    (year) => netWorthModel.slope * year + netWorthModel.intercept
-  );
-  const assetPredictions = predictYears.map(
-    (year) => assetModel.slope * year + assetModel.intercept
+      parseFloat(entry.cash_on_hand || 0) +
+      parseFloat(entry.cash_in_bank || 0) +
+      parseFloat(entry.us_stock || 0) +
+      parseFloat(entry.canada_stock || 0) +
+      parseFloat(entry.accounts_receivable || 0)
   );
 
   const data = {
-    labels: networths.map((entry) => formatDate(entry.today_date)),
+    labels,
     datasets: [
       {
         label: "Total Net Worth",
-        data: networths.map((entry) => entry.total_networth),
+        data: values,
         borderColor: "#27ae60",
         backgroundColor: "rgba(39, 174, 96, 0.2)",
         tension: 0.3,
@@ -92,6 +86,33 @@ const NetWorthGraph = ({ networths }) => {
         pointRadius: 5,
         pointBackgroundColor: "#27ae60",
         pointHoverRadius: 8,
+      },
+      {
+        label: "Total Assets",
+        data: assetValues,
+        borderColor: "#e67e22",
+        backgroundColor: "rgba(230, 126, 34, 0.1)",
+        tension: 0.3,
+        fill: false,
+        pointRadius: 5,
+        pointBackgroundColor: "#e67e22",
+        pointHoverRadius: 8,
+      },
+      {
+        label: "Net Worth Trend",
+        data: regressionNetWorth.map((pt) => resultNetWorth.predict(pt[0])[1]),
+        borderColor: "#2980b9",
+        borderDash: [5, 5],
+        fill: false,
+        pointRadius: 0,
+      },
+      {
+        label: "Assets Trend",
+        data: regressionAssets.map((pt) => resultAssets.predict(pt[0])[1]),
+        borderColor: "#f1c40f",
+        borderDash: [5, 5],
+        fill: false,
+        pointRadius: 0,
       },
     ],
   };
@@ -102,49 +123,29 @@ const NetWorthGraph = ({ networths }) => {
       legend: {
         display: true,
         position: "top",
-        labels: {
-          font: {
-            size: 14,
-            family: "Arial, sans-serif",
-            weight: "bold",
-          },
-          color: "#333",
-        },
       },
       tooltip: {
         callbacks: {
           label: (tooltipItem) =>
-            `Net Worth: $${tooltipItem.raw.toLocaleString()}`,
+            `Value: $${tooltipItem.raw.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+            })}`,
         },
       },
     },
     scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: "USD ($)",
+        },
+      },
       x: {
         title: {
           display: true,
           text: "Date",
-          color: "#555",
-          font: {
-            size: 14,
-          },
         },
-        grid: {
-          color: "rgba(200, 200, 200, 0.2)", // Light grid lines
-        },
-      },
-      y: {
-        title: {
-          display: true,
-          text: "Net Worth ($)",
-          color: "#555",
-          font: {
-            size: 14,
-          },
-        },
-        grid: {
-          color: "rgba(200, 200, 200, 0.2)",
-        },
-        beginAtZero: true,
       },
     },
   };
@@ -155,30 +156,26 @@ const NetWorthGraph = ({ networths }) => {
       <div className="canvas-container">
         <Line data={data} options={options} />
       </div>
-      <div className="prediction-summary">
-        <h4>Predicted Net Worth & Assets</h4>
-        <ul>
-          <li>
-            <strong>In 5 years:</strong> Net Worth ≈ $
-            {netWorthPredictions[0]
-              .toFixed(2)
-              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Assets ≈ $
-            {assetPredictions[0]
-              .toFixed(2)
-              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-          </li>
-          <li>
-            <strong>In 10 years:</strong> Net Worth ≈ $
-            {netWorthPredictions[1]
-              .toFixed(2)
-              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Assets ≈ $
-            {assetPredictions[1]
-              .toFixed(2)
-              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-          </li>
-        </ul>
+      <div className="prediction-text">
+        <p>
+          📈 Based on your current trend:
+          <br />
+          <strong>Net Worth in 5 years:</strong> $
+          {futureNetWorth5.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          })}
+          <br />
+          <strong>Net Worth in 10 years:</strong> $
+          {futureNetWorth10.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          })}
+          <br />
+          <strong>Total Assets in 5 years:</strong> $
+          {futureAssets5.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          <br />
+          <strong>Total Assets in 10 years:</strong> $
+          {futureAssets10.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+        </p>
       </div>
     </div>
   );
