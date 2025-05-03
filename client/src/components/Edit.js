@@ -89,7 +89,12 @@ const Editnetworth = ({ networth }) => {
       <div
         className="modal"
         id={`id${networth.networth_id}`}
-        onClick={setAllValues}
+        onClick={(e) => {
+          // only reset if user clicks outside the modal content
+          if (e.target.classList.contains("modal")) {
+            setAllValues();
+          }
+        }}
       >
         <div className="modal-dialog">
           <div className="modal-content">
@@ -127,11 +132,14 @@ const Editnetworth = ({ networth }) => {
                 type="number"
                 className="form-control"
                 value={accounts_receivable}
-                onChange={(e) => set_accounts_receivable(e.target.value)}
+                onChange={(e) =>
+                  set_cash_on_hand(parseFloat(e.target.value) || 0)
+                }
               ></input>
               <input
                 type="number"
                 className="form-control"
+                step="0.01"
                 value={accounts_payable}
                 onChange={(e) => set_accounts_payable(e.target.value)}
               ></input>
