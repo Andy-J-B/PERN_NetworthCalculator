@@ -30,7 +30,7 @@ const Input = () => {
       ).toFixed(2);
       console.log(nontoday, body["allValues"]);
       const response = await fetch(
-        "http://localhost:4000/networth_calculator",
+        "http://localhost:2938/networth_calculator",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

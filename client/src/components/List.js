@@ -16,7 +16,7 @@ const List = () => {
   const deleteNW = async (id) => {
     try {
       const deleteNW = await fetch(
-        `http://localhost:4000/networth_calculator/${id}`,
+        `http://localhost:2938/networth_calculator/${id}`,
         {
           method: "DELETE",
         }
@@ -32,7 +32,7 @@ const List = () => {
 
   const getNWs = async () => {
     try {
-      const response = await fetch("http://localhost:4000/networth_calculator");
+      const response = await fetch("http://localhost:2938/networth_calculator");
       const jsonData = await response.json();
 
       setNetworths(jsonData);

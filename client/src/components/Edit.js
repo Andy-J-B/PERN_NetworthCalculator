@@ -51,7 +51,7 @@ const Editnetworth = ({ networth }) => {
       ).toFixed(2);
 
       const response = await fetch(
-        `http://localhost:4000/networth_calculator/${networth.networth_id}`,
+        `http://localhost:2938/networth_calculator/${networth.networth_id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
