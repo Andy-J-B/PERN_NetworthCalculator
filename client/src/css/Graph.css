@@ -19,3 +19,13 @@
 .canvas-container {
   height: 400px; /* Set height of the graph */
 }
+
+.revert-button {
+  margin-top: 10px;
+  padding: 6px 12px;
+  background-color: #2980b9;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}

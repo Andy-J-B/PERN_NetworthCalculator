@@ -1,6 +1,8 @@
-import React from "react";
 import { Line } from "react-chartjs-2";
 import regression from "regression";
+import zoomPlugin from "chartjs-plugin-zoom";
+import React, { useRef } from "react";
+
 import {
   Chart as ChartJS,
   LineElement,
@@ -18,10 +20,18 @@ ChartJS.register(
   LinearScale,
   PointElement,
   Tooltip,
-  Legend
+  Legend,
+  zoomPlugin
 );
 
 const NetWorthGraph = ({ networths }) => {
+  const chartRef = useRef(null);
+
+  const handleResetZoom = () => {
+    if (chartRef.current) {
+      chartRef.current.resetZoom();
+    }
+  };
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "short", day: "numeric" };
     return new Date(dateString).toLocaleDateString("en-US", options);
@@ -120,16 +130,33 @@ const NetWorthGraph = ({ networths }) => {
   const options = {
     responsive: true,
     plugins: {
-      legend: {
-        display: true,
-        position: "top",
-      },
+      legend: { display: true, position: "top" },
       tooltip: {
         callbacks: {
           label: (tooltipItem) =>
             `Value: $${tooltipItem.raw.toLocaleString("en-US", {
               minimumFractionDigits: 2,
             })}`,
+        },
+      },
+      zoom: {
+        pan: {
+          enabled: true,
+          mode: "x",
+        },
+        zoom: {
+          drag: {
+            enabled: true,
+            borderColor: "rgba(0,0,0,0.3)",
+            borderWidth: 1,
+            backgroundColor: "rgba(0,0,0,0.1)",
+          },
+          mode: "x",
+          onZoomComplete: ({ chart }) => {
+            const startIdx = chart.scales.x.min;
+            const endIdx = chart.scales.x.max;
+            // You can update derived values or trigger events here
+          },
         },
       },
     },
@@ -154,8 +181,11 @@ const NetWorthGraph = ({ networths }) => {
     <div className="graph-container">
       <h3>Net Worth Over Time</h3>
       <div className="canvas-container">
-        <Line data={data} options={options} />
+        <Line ref={chartRef} data={data} options={options} />
       </div>
+      <button onClick={handleResetZoom} className="revert-button">
+        Revert Zoom
+      </button>
       <div className="prediction-text">
         <p>
           📈 Based on your current trend:
