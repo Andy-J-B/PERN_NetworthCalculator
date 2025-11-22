@@ -1,10 +1,11 @@
-/* client/src/components/Input.js */
+// client/src/components/Input.js
 import React, { useState, useContext } from "react";
 import { NetWorthContext } from "../App";
 import Toast from "./Toast";
 import "../css/Input.css";
 
 const Input = () => {
+  // ---- initial (empty) values -------------------------------------------------
   const initVals = {
     cash_on_hand: "",
     cash_in_bank: "",
@@ -19,49 +20,56 @@ const Input = () => {
   const [toast, setToast] = useState(null);
   const { addNetWorth, apiBase } = useContext(NetWorthContext);
 
+  // ---- update a single field --------------------------------------------------
   const onChange = (e) => {
     const { name, value } = e.target;
-    // keep empty string for controlled input, otherwise parseFloat
     setValues((prev) => ({
       ...prev,
+      // keep an empty string for a controlled input, otherwise parseFloat
       [name]: value === "" ? "" : parseFloat(value),
     }));
   };
 
+  // ---- compute the total net‑worth on‑the‑fly (for preview) -------------------
+  const computeTotal = () => {
+    const {
+      cash_on_hand = 0,
+      cash_in_bank = 0,
+      accounts_receivable = 0,
+      accounts_payable = 0,
+      canada_stock = 0,
+      us_stock = 0,
+    } = values;
+
+    const total =
+      +cash_on_hand +
+      +cash_in_bank +
+      +accounts_receivable +
+      +canada_stock +
+      +us_stock -
+      +accounts_payable;
+
+    return isNaN(total) ? "" : total.toFixed(2);
+  };
+
+  // ---- submit ---------------------------------------------------------------
   const onSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    try {
-      // ---- 1️⃣ calculate total net‑worth on the client ---------------
-      const {
-        cash_on_hand = 0,
-        cash_in_bank = 0,
-        accounts_receivable = 0,
-        accounts_payable = 0,
-        canada_stock = 0,
-        us_stock = 0,
-      } = values;
 
-      const total_networth = (
-        +cash_on_hand +
-        +cash_in_bank +
-        +accounts_receivable +
-        +canada_stock +
-        +us_stock -
-        +accounts_payable
-      ).toFixed(2);
+    try {
+      const total_networth = computeTotal();
 
       const body = {
-        cash_on_hand,
-        cash_in_bank,
-        accounts_receivable,
-        accounts_payable,
-        canada_stock,
-        us_stock,
+        cash_on_hand: values.cash_on_hand,
+        cash_in_bank: values.cash_in_bank,
+        accounts_receivable: values.accounts_receivable,
+        accounts_payable: values.accounts_payable,
+        canada_stock: values.canada_stock,
+        us_stock: values.us_stock,
         total_networth,
       };
 
-      // ---- 2️⃣ POST to the API ---------------------------------------
       const resp = await fetch(`${apiBase}/networth_calculator`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,13 +77,12 @@ const Input = () => {
       });
 
       if (!resp.ok) throw new Error("Server error");
-
       const saved = await resp.json();
 
-      // ---- 3️⃣ Optimistically update UI -------------------------------
+      // Optimistic UI update – add the newly saved row to the context list
       addNetWorth(saved);
       setToast({ message: "Snapshot added! 🎉", type: "success" });
-      setValues(initVals); // clear form
+      setValues(initVals); // reset the form
     } catch (err) {
       console.error(err);
       setToast({
@@ -88,10 +95,11 @@ const Input = () => {
   };
 
   return (
-    <section className="form-section">
-      <h2>Add New Snapshot</h2>
+    <section className="form-container">
+      <h1>Net Worth Calculator</h1>
 
-      <form className="networth-form" onSubmit={onSubmit}>
+      <form className="networth-form" onSubmit={onSubmit} noValidate>
+        {/* ---- numeric inputs – same layout, mobile‑friendly ---------- */}
         <input
           type="number"
           name="cash_on_hand"
@@ -99,6 +107,7 @@ const Input = () => {
           value={values.cash_on_hand}
           onChange={onChange}
           step="0.01"
+          min="0"
           required
         />
         <input
@@ -108,6 +117,7 @@ const Input = () => {
           value={values.cash_in_bank}
           onChange={onChange}
           step="0.01"
+          min="0"
           required
         />
         <input
@@ -117,6 +127,7 @@ const Input = () => {
           value={values.accounts_receivable}
           onChange={onChange}
           step="0.01"
+          min="0"
           required
         />
         <input
@@ -126,6 +137,7 @@ const Input = () => {
           value={values.accounts_payable}
           onChange={onChange}
           step="0.01"
+          min="0"
           required
         />
         <input
@@ -135,6 +147,7 @@ const Input = () => {
           value={values.canada_stock}
           onChange={onChange}
           step="0.01"
+          min="0"
           required
         />
         <input
@@ -144,14 +157,34 @@ const Input = () => {
           value={values.us_stock}
           onChange={onChange}
           step="0.01"
+          min="0"
           required
         />
+
+        {/* ---- live preview of the calculated total -------------------- */}
+        <div className="total-preview">
+          <span>Total Net Worth:</span>
+          <strong>
+            {computeTotal()
+              ? `$${Number(computeTotal()).toLocaleString()}`
+              : "—"}
+          </strong>
+        </div>
+
+        {/* ---- submit button – shows spinner while saving -------------- */}
         <button type="submit" disabled={submitting}>
-          {submitting ? "Saving…" : "Add"}
+          {submitting ? (
+            <>
+              <span className="spinner" />
+              Saving…
+            </>
+          ) : (
+            "Add"
+          )}
         </button>
       </form>
 
-      {/* Toast – tiny overlay that disappears after 3 s */}
+      {/* ---- toast notification --------------------------------------- */}
       {toast && (
         <Toast
           message={toast.message}

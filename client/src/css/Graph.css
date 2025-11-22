@@ -1,4 +1,6 @@
-/* client/src/css/Graph.css */
+/* ---------------------------------------------------------------
+   client/src/css/Graph.css – styling for the new multi‑view chart
+   --------------------------------------------------------------- */
 
 .networth-graph {
   background: #fff;
@@ -7,23 +9,74 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
 }
 
-/* Title & subtitle spacing */
+/* Title spacing */
 .networth-graph h3,
 .networth-graph h4 {
-  margin: 0;
+  margin: 0 0 0.8rem;
   font-weight: 600;
 }
 
-/* Summary text */
+/* ---------------------------------------------------------------
+   View selector – a row of small toggle buttons
+   --------------------------------------------------------------- */
+.view-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.view-btn {
+  background: #ecf0f1;
+  border: 1px solid #bdc3c7;
+  color: #2c3e50;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.view-btn:hover {
+  background: #d0d7de;
+  border-color: #95a5a6;
+}
+
+.view-btn.active {
+  background: #27ae60;
+  border-color: #219150;
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------
+   Summary stats (shown below the chart)
+   --------------------------------------------------------------- */
 .summary-stats p {
   margin: 0.3rem 0;
   font-size: 0.95rem;
 }
 
-/* Small placeholder when not enough data */
+/* ---------------------------------------------------------------
+   Placeholder when there isn’t enough data
+   --------------------------------------------------------------- */
 .graph-placeholder {
   text-align: center;
   color: #777;
   font-style: italic;
   margin: 2rem 0;
+}
+
+/* ---------------------------------------------------------------
+   Responsive tweaks
+   --------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .view-selector {
+    justify-content: center;
+  }
+  .view-btn {
+    flex: 1 1 45%;
+    text-align: center;
+  }
 }
