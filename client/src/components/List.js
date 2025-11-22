@@ -1,32 +1,34 @@
-/* client/src/components/List.js */
-import React, { useContext, useState } from "react";
+// client/src/components/List.js
+import React, { Fragment, useContext, useState } from "react";
 import { NetWorthContext } from "../App";
 import Edit from "./Edit";
-import NetWorthGraph from "./Graph";
 import "../css/List.css";
+import NetWorthGraph from "./Graph";
 
 const List = () => {
+  // --------------------------------------------------------------
+  // Pull everything we need from the shared context
+  // --------------------------------------------------------------
   const { networths, loading, deleteNetWorth, apiBase } =
     useContext(NetWorthContext);
+
+  // --------------------------------------------------------------
+  // Local UI state (only for visual “deleting…” feedback)
+  // --------------------------------------------------------------
   const [deletingId, setDeletingId] = useState(null);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this entry?")) return;
-    setDeletingId(id);
-    try {
-      const resp = await fetch(`${apiBase}/networth_calculator/${id}`, {
-        method: "DELETE",
-      });
-      if (!resp.ok && resp.status !== 204) throw new Error("Delete failed");
-      deleteNetWorth(id);
-    } catch (e) {
-      console.error(e);
-      alert("Could not delete the entry.");
-    } finally {
-      setDeletingId(null);
-    }
-  };
+  // --------------------------------------------------------------
+  // Debug: show that the component received data from context
+  // --------------------------------------------------------------
+  console.log(
+    "%c<List> rendered – rows:",
+    "color:#8b5cf6;font-weight:bold",
+    networths.length
+  );
 
+  // --------------------------------------------------------------
+  // Helper – pretty‑print the ISO date that comes from PostgreSQL
+  // --------------------------------------------------------------
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
@@ -37,14 +39,42 @@ const List = () => {
     });
   };
 
+  // --------------------------------------------------------------
+  // DELETE handler – talks to the API **and** updates context state
+  // --------------------------------------------------------------
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this entry?")) return;
+    setDeletingId(id);
+    try {
+      const resp = await fetch(`${apiBase}/networth_calculator/${id}`, {
+        method: "DELETE",
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      // Update context (which also triggers the UI to re‑render)
+      deleteNetWorth(id);
+      console.log("%cDelete successful – id:", "color:#10b981", id);
+    } catch (err) {
+      console.error("%cDelete failed –", "color:#ef4444", err);
+      alert("Could not delete – see console for details.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // --------------------------------------------------------------
+  // UI – Loading, Empty‑state, Table, Graph
+  // --------------------------------------------------------------
   if (loading) return <div className="loader">Loading…</div>;
 
   if (!networths.length) {
-    return <p className="empty-state">No data yet – add a snapshot above.</p>;
+    return (
+      <p className="empty-state">No records yet – add a snapshot above.</p>
+    );
   }
 
   return (
-    <>
+    <Fragment>
       <table className="table mt-5 text-center">
         <thead>
           <tr>
@@ -73,6 +103,8 @@ const List = () => {
               <td>{row.canada_stock}</td>
               <td>{row.us_stock}</td>
               <td>{row.total_networth}</td>
+
+              {/* Δ (difference) – colour‑coded */}
               <td
                 className={
                   row.difference > 0
@@ -86,9 +118,11 @@ const List = () => {
                   ? Number(row.difference).toFixed(2)
                   : "-"}
               </td>
+
               <td>
                 <Edit networth={row} />
               </td>
+
               <td>
                 <button
                   className="btn btn-danger"
@@ -106,7 +140,7 @@ const List = () => {
       <section className="graph-container mt-5">
         <NetWorthGraph networths={networths} />
       </section>
-    </>
+    </Fragment>
   );
 };
 

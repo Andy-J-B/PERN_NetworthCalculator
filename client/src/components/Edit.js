@@ -1,185 +1,180 @@
-import React, { Fragment, useState } from "react";
+import React, { useState, useContext } from "react";
+import { NetWorthContext } from "../App";
 import "../css/Edit.css";
 
-const Editnetworth = ({ networth }) => {
-  const [today_date, set_today_date] = useState(networth.today_date);
-  const [cash_on_hand, set_cash_on_hand] = useState(
-    parseFloat(networth.cash_on_hand)
-  );
-  const [cash_in_bank, set_cash_in_bank] = useState(
-    parseFloat(networth.cash_in_bank)
-  );
-  const [accounts_receivable, set_accounts_receivable] = useState(
-    parseFloat(networth.accounts_receivable)
-  );
-  const [accounts_payable, set_accounts_payable] = useState(
-    parseFloat(networth.accounts_payable)
-  );
-  const [canada_stock, set_canada_stock] = useState(
-    parseFloat(networth.canada_stock)
-  );
-  const [us_stock, set_us_stock] = useState(parseFloat(networth.us_stock));
+const Edit = ({ networth }) => {
+  const { updateNetWorth, apiBase } = useContext(NetWorthContext);
+  const [editing, setEditing] = useState(false);
+  const [values, setValues] = useState({
+    cash_on_hand: networth.cash_on_hand ?? "",
+    cash_in_bank: networth.cash_in_bank ?? "",
+    accounts_receivable: networth.accounts_receivable ?? "",
+    accounts_payable: networth.accounts_payable ?? "",
+    canada_stock: networth.canada_stock ?? "",
+    us_stock: networth.us_stock ?? "",
+    total_networth: networth.total_networth ?? "",
+    today_date: networth.today_date ? networth.today_date.split("T")[0] : "",
+  });
 
-  // Edit description function
+  const changeHandler = (e) => {
+    const { name, value } = e.target;
+    setValues((prev) => ({
+      ...prev,
+      [name]: value === "" ? "" : parseFloat(value),
+    }));
+  };
 
-  const updateDescription = async (e) => {
+  const submitHandler = async (e) => {
     e.preventDefault();
     try {
-      const body = {
-        today_date,
-        cash_on_hand,
-        cash_in_bank,
-        accounts_receivable,
-        accounts_payable,
-        canada_stock,
-        us_stock,
-      };
+      // If the user left total_networth blank, compute it automatically
+      const {
+        cash_on_hand = 0,
+        cash_in_bank = 0,
+        accounts_receivable = 0,
+        accounts_payable = 0,
+        canada_stock = 0,
+        us_stock = 0,
+      } = values;
 
-      let finalBody = {};
-      for (var key in body) {
-        finalBody[key] = parseFloat(body[key]);
-      }
-      const sumValues = (obj) =>
-        Object.values(obj).reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
-
-      let nontoday = Object.assign({}, finalBody);
-      delete nontoday["today_date"];
-      delete nontoday["accounts_payable"];
-      finalBody["today_date"] = body["today_date"];
-      finalBody["total_networth"] = (
-        sumValues(nontoday) - parseFloat(finalBody["accounts_payable"])
+      const autoTotal = (
+        +cash_on_hand +
+        +cash_in_bank +
+        +accounts_receivable +
+        +canada_stock +
+        +us_stock -
+        +accounts_payable
       ).toFixed(2);
 
-      const response = await fetch(
-        `http://localhost:2938/networth_calculator/${networth.networth_id}`,
+      const payload = {
+        ...values,
+        total_networth:
+          values.total_networth !== "" ? values.total_networth : autoTotal,
+      };
+
+      const putRes = await fetch(
+        `${apiBase}/networth_calculator/${networth.networth_id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(finalBody),
+          body: JSON.stringify(payload),
         }
       );
 
-      window.location = "/";
+      if (!putRes.ok) {
+        const errText = await putRes.text();
+        throw new Error(errText || "Failed to update");
+      }
+
+      // Server returns the updated row; push it into context
+      const updatedRow = await putRes.json();
+      updateNetWorth(updatedRow);
+      setEditing(false);
     } catch (err) {
-      console.error(err.message);
+      console.error(err);
+      alert(err.message);
     }
   };
 
-  const setAllValues = () => {
-    set_today_date(networth.today_date);
-    set_cash_on_hand(networth.cash_on_hand);
-    set_cash_in_bank(networth.cash_in_bank);
-    set_accounts_receivable(networth.accounts_receivable);
-    set_accounts_payable(networth.accounts_payable);
-    set_canada_stock(networth.canada_stock);
-    set_us_stock(networth.us_stock);
-  };
-
   return (
-    <Fragment>
-      <button
-        type="button"
-        className="btn btn-warning"
-        data-toggle="modal"
-        data-target={`#id${networth.networth_id}`}
-      >
+    <>
+      <button className="btn btn-edit" onClick={() => setEditing(true)}>
         Edit
       </button>
 
-      <div
-        className="modal"
-        id={`id${networth.networth_id}`}
-        onClick={(e) => {
-          // only reset if user clicks outside the modal content
-          if (e.target.classList.contains("modal")) {
-            setAllValues();
-          }
-        }}
-      >
-        <div className="modal-dialog">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h4 className="modal-title">Edit networth</h4>
-              <button
-                type="button"
-                className="close"
-                data-dismiss="modal"
-                onClick={setAllValues}
-              >
-                &times;
-              </button>
-            </div>
-            <div className="modal-body">
+      {editing && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Edit snapshot</h3>
+            <form onSubmit={submitHandler}>
               <input
-                type="datetime"
-                className="form-control"
-                value={today_date}
-                onChange={(e) => set_today_date(e.target.value)}
-              ></input>
+                type="date"
+                name="today_date"
+                value={values.today_date}
+                onChange={changeHandler}
+                required
+              />
               <input
                 type="number"
-                className="form-control"
-                value={cash_on_hand}
-                onChange={(e) => set_cash_on_hand(e.target.value)}
-              ></input>
-              <input
-                type="number"
-                className="form-control"
-                value={cash_in_bank}
-                onChange={(e) => set_cash_in_bank(e.target.value)}
-              ></input>
-              <input
-                type="number"
-                className="form-control"
-                value={accounts_receivable}
-                onChange={(e) =>
-                  set_cash_on_hand(parseFloat(e.target.value) || 0)
-                }
-              ></input>
-              <input
-                type="number"
-                className="form-control"
+                name="cash_on_hand"
+                placeholder="Cash on hand"
+                value={values.cash_on_hand}
+                onChange={changeHandler}
                 step="0.01"
-                value={accounts_payable}
-                onChange={(e) => set_accounts_payable(e.target.value)}
-              ></input>
+                required
+              />
               <input
                 type="number"
-                className="form-control"
-                value={canada_stock}
-                onChange={(e) => set_canada_stock(e.target.value)}
-              ></input>
+                name="cash_in_bank"
+                placeholder="Cash in bank"
+                value={values.cash_in_bank}
+                onChange={changeHandler}
+                step="0.01"
+                required
+              />
               <input
                 type="number"
-                className="form-control"
-                value={us_stock}
-                onChange={(e) => set_us_stock(e.target.value)}
-              ></input>
-            </div>
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-warning"
-                data-dismiss="modal"
-                onClick={(e) => updateDescription(e)}
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                data-dismiss="modal"
-                onClick={setAllValues}
-              >
-                Close
-              </button>
-            </div>
+                name="accounts_receivable"
+                placeholder="Accounts receivable"
+                value={values.accounts_receivable}
+                onChange={changeHandler}
+                step="0.01"
+                required
+              />
+              <input
+                type="number"
+                name="accounts_payable"
+                placeholder="Accounts payable"
+                value={values.accounts_payable}
+                onChange={changeHandler}
+                step="0.01"
+                required
+              />
+              <input
+                type="number"
+                name="canada_stock"
+                placeholder="Canada stocks"
+                value={values.canada_stock}
+                onChange={changeHandler}
+                step="0.01"
+                required
+              />
+              <input
+                type="number"
+                name="us_stock"
+                placeholder="US stocks"
+                value={values.us_stock}
+                onChange={changeHandler}
+                step="0.01"
+                required
+              />
+              {/* total_networth optional – auto‑calculated if left empty */}
+              <input
+                type="number"
+                name="total_networth"
+                placeholder="Total net‑worth (auto‑calc if empty)"
+                value={values.total_networth}
+                onChange={changeHandler}
+                step="0.01"
+              />
+              <div className="modal-actions">
+                <button type="submit" className="btn btn-primary">
+                  Save
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setEditing(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </div>
-    </Fragment>
+      )}
+    </>
   );
 };
 
-export default Editnetworth;
+export default Edit;
