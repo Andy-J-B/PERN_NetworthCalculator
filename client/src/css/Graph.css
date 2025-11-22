@@ -1,31 +1,29 @@
-.graph-container {
-  width: 100%;
-  max-width: 800px;
-  margin: 30px auto; /* Center the graph */
-  background: #f8f9fa; /* Light background for contrast */
-  border-radius: 15px; /* Rounded corners */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow */
-  padding: 20px; /* Spacing around the graph */
+/* client/src/css/Graph.css */
+
+.networth-graph {
+  background: #fff;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
 }
 
-.graph-container h3 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: #333;
+/* Title & subtitle spacing */
+.networth-graph h3,
+.networth-graph h4 {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Summary text */
+.summary-stats p {
+  margin: 0.3rem 0;
+  font-size: 0.95rem;
+}
+
+/* Small placeholder when not enough data */
+.graph-placeholder {
   text-align: center;
-}
-
-.canvas-container {
-  height: 400px; /* Set height of the graph */
-}
-
-.revert-button {
-  margin-top: 10px;
-  padding: 6px 12px;
-  background-color: #2980b9;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  color: #777;
+  font-style: italic;
+  margin: 2rem 0;
 }

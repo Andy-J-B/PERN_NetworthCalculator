@@ -1,99 +1,112 @@
-import React, { Fragment, useEffect, useState } from "react";
-import Edit from "./Edit.js";
+/* client/src/components/List.js */
+import React, { useContext, useState } from "react";
+import { NetWorthContext } from "../App";
+import Edit from "./Edit";
+import NetWorthGraph from "./Graph";
 import "../css/List.css";
-import NetWorthGraph from "./Graph.js";
 
 const List = () => {
-  const [networths, setNetworths] = useState([]);
+  const { networths, loading, deleteNetWorth, apiBase } =
+    useContext(NetWorthContext);
+  const [deletingId, setDeletingId] = useState(null);
 
-  // delete networth function
-
-  const formatDate = (date) => {
-    const civicNumber = date.substr(0, date.indexOf("T"));
-    return civicNumber;
-  };
-
-  const deleteNW = async (id) => {
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this entry?")) return;
+    setDeletingId(id);
     try {
-      const deleteNW = await fetch(
-        `http://localhost:2938/networth_calculator/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      // Make it refresh page
-
-      setNetworths(networths.filter((networth) => networth.networth_id !== id)); // filters networths
-    } catch (err) {
-      console.error(err.message);
+      const resp = await fetch(`${apiBase}/networth_calculator/${id}`, {
+        method: "DELETE",
+      });
+      if (!resp.ok && resp.status !== 204) throw new Error("Delete failed");
+      deleteNetWorth(id);
+    } catch (e) {
+      console.error(e);
+      alert("Could not delete the entry.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  const getNWs = async () => {
-    try {
-      const response = await fetch("http://localhost:2938/networth_calculator");
-      const jsonData = await response.json();
-
-      setNetworths(jsonData);
-    } catch (err) {
-      console.log(err.message);
-    }
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
-  useEffect(() => {
-    getNWs();
-  }, []);
+  if (loading) return <div className="loader">Loading…</div>;
+
+  if (!networths.length) {
+    return <p className="empty-state">No data yet – add a snapshot above.</p>;
+  }
 
   return (
-    <Fragment>
-      {" "}
+    <>
       <table className="table mt-5 text-center">
         <thead>
           <tr>
-            <th>Date of Input</th>
-            <th>Cash On Hand</th>
-            <th>Cash In Bank</th>
-            <th>Accounts Receivable</th>
-            <th>Accounts Payable</th>
-            <th>Canadian Stocks</th>
-            <th>US Stocks</th>
-            <th>Total Networth</th>
-
+            <th>Date</th>
+            <th>Cash On Hand</th>
+            <th>Cash In Bank</th>
+            <th>Accounts Receivable</th>
+            <th>Accounts Payable</th>
+            <th>Canada Stocks</th>
+            <th>US Stocks</th>
+            <th>Total Net‑Worth</th>
+            <th>Δ</th>
             <th>Edit</th>
             <th>Delete</th>
           </tr>
         </thead>
+
         <tbody>
-          {networths.map((networth) => (
-            <tr key={networth.networth_id}>
-              <td>{formatDate(networth.today_date)}</td>
-              <td>{networth.cash_on_hand}</td>
-              <td>{networth.cash_in_bank}</td>
-              <td>{networth.accounts_receivable}</td>
-              <td>{networth.accounts_payable}</td>
-              <td>{networth.canada_stock}</td>
-              <td>{networth.us_stock}</td>
-              <td>{networth.total_networth}</td>
+          {networths.map((row) => (
+            <tr key={row.networth_id}>
+              <td>{formatDate(row.today_date)}</td>
+              <td>{row.cash_on_hand}</td>
+              <td>{row.cash_in_bank}</td>
+              <td>{row.accounts_receivable}</td>
+              <td>{row.accounts_payable}</td>
+              <td>{row.canada_stock}</td>
+              <td>{row.us_stock}</td>
+              <td>{row.total_networth}</td>
+              <td
+                className={
+                  row.difference > 0
+                    ? "diff-positive"
+                    : row.difference < 0
+                      ? "diff-negative"
+                      : ""
+                }
+              >
+                {row.difference !== null
+                  ? Number(row.difference).toFixed(2)
+                  : "-"}
+              </td>
               <td>
-                <Edit networth={networth} />
+                <Edit networth={row} />
               </td>
               <td>
                 <button
                   className="btn btn-danger"
-                  onClick={() => deleteNW(networth.networth_id)}
+                  onClick={() => handleDelete(row.networth_id)}
+                  disabled={deletingId === row.networth_id}
                 >
-                  Delete
+                  {deletingId === row.networth_id ? "…" : "Delete"}
                 </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="graph-container mt-5">
+
+      <section className="graph-container mt-5">
         <NetWorthGraph networths={networths} />
-      </div>
-    </Fragment>
+      </section>
+    </>
   );
 };
 

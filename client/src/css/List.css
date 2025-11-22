@@ -45,7 +45,9 @@
   border: none;
   cursor: pointer;
   border-radius: 4px;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 .table tbody td .btn-danger {
@@ -79,4 +81,31 @@
   .table tbody td {
     padding: 8px;
   }
+}
+
+/* client/src/css/List.css */
+
+/* Δ (difference) visual cue */
+.diff-positive {
+  color: #27ae60; /* green */
+  font-weight: 600;
+}
+.diff-negative {
+  color: #e74c3c; /* red */
+  font-weight: 600;
+}
+
+/* Simple spinner */
+.loader {
+  text-align: center;
+  font-size: 1.2rem;
+  padding: 30px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  margin: 2rem 0;
+  font-size: 1.1rem;
+  color: #555;
 }

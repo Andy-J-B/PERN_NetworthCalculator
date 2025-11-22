@@ -1,210 +1,101 @@
-import { Line } from "react-chartjs-2";
-import regression from "regression";
-import zoomPlugin from "chartjs-plugin-zoom";
-import React, { useRef } from "react";
-
+/* client/src/components/Graph.js */
+import React from "react";
 import {
-  Chart as ChartJS,
-  LineElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   Legend,
-} from "chart.js";
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
 import "../css/Graph.css";
 
-ChartJS.register(
-  LineElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  Tooltip,
-  Legend,
-  zoomPlugin
-);
-
 const NetWorthGraph = ({ networths }) => {
-  const chartRef = useRef(null);
-
-  const handleResetZoom = () => {
-    if (chartRef.current) {
-      chartRef.current.resetZoom();
-    }
-  };
-  const formatDate = (dateString) => {
-    const options = { year: "numeric", month: "short", day: "numeric" };
-    return new Date(dateString).toLocaleDateString("en-US", options);
-  };
-
-  if (!networths || networths.length === 0) {
-    return <p>No net worth data available.</p>;
-  }
-
-  const baseDate = new Date(networths[0].today_date).getTime();
-  const daysSinceStart = (date) =>
-    (new Date(date).getTime() - baseDate) / (1000 * 3600 * 24);
-
-  const regressionNetWorth = networths.map((entry) => [
-    daysSinceStart(entry.today_date),
-    parseFloat(entry.total_networth),
-  ]);
-
-  const regressionAssets = networths.map((entry) => {
-    const totalAssets =
-      parseFloat(entry.cash_on_hand || 0) +
-      parseFloat(entry.cash_in_bank || 0) +
-      parseFloat(entry.us_stock || 0) +
-      parseFloat(entry.canada_stock || 0) +
-      parseFloat(entry.accounts_receivable || 0);
-    return [daysSinceStart(entry.today_date), totalAssets];
-  });
-
-  const resultNetWorth = regression.linear(regressionNetWorth);
-  const resultAssets = regression.linear(regressionAssets);
-
-  const daysInYear = 365.25;
-  const lastX = regressionNetWorth.at(-1)[0];
-
-  const futureNetWorth5 = resultNetWorth.predict(lastX + daysInYear * 5)[1];
-  const futureNetWorth10 = resultNetWorth.predict(lastX + daysInYear * 10)[1];
-  const futureAssets5 = resultAssets.predict(lastX + daysInYear * 5)[1];
-  const futureAssets10 = resultAssets.predict(lastX + daysInYear * 10)[1];
-
-  const labels = networths.map((entry) => formatDate(entry.today_date));
-  const values = networths.map((entry) => parseFloat(entry.total_networth));
-
-  const assetValues = networths.map(
-    (entry) =>
-      parseFloat(entry.cash_on_hand || 0) +
-      parseFloat(entry.cash_in_bank || 0) +
-      parseFloat(entry.us_stock || 0) +
-      parseFloat(entry.canada_stock || 0) +
-      parseFloat(entry.accounts_receivable || 0)
+  // sort chronologically
+  const sorted = [...networths].sort(
+    (a, b) => new Date(a.today_date) - new Date(b.today_date)
   );
 
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: "Total Net Worth",
-        data: values,
-        borderColor: "#27ae60",
-        backgroundColor: "rgba(39, 174, 96, 0.2)",
-        tension: 0.3,
-        fill: true,
-        pointRadius: 5,
-        pointBackgroundColor: "#27ae60",
-        pointHoverRadius: 8,
-      },
-      {
-        label: "Total Assets",
-        data: assetValues,
-        borderColor: "#e67e22",
-        backgroundColor: "rgba(230, 126, 34, 0.1)",
-        tension: 0.3,
-        fill: false,
-        pointRadius: 5,
-        pointBackgroundColor: "#e67e22",
-        pointHoverRadius: 8,
-      },
-      {
-        label: "Net Worth Trend",
-        data: regressionNetWorth.map((pt) => resultNetWorth.predict(pt[0])[1]),
-        borderColor: "#2980b9",
-        borderDash: [5, 5],
-        fill: false,
-        pointRadius: 0,
-      },
-      {
-        label: "Assets Trend",
-        data: regressionAssets.map((pt) => resultAssets.predict(pt[0])[1]),
-        borderColor: "#f1c40f",
-        borderDash: [5, 5],
-        fill: false,
-        pointRadius: 0,
-      },
-    ],
-  };
+  // transform into chart‑friendly format
+  const chartData = sorted.map((row) => ({
+    date: new Date(row.today_date).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    }),
+    total: parseFloat(row.total_networth),
+    delta: row.difference !== null ? parseFloat(row.difference) : 0,
+  }));
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: { display: true, position: "top" },
-      tooltip: {
-        callbacks: {
-          label: (tooltipItem) =>
-            `Value: $${tooltipItem.raw.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-            })}`,
-        },
-      },
-      zoom: {
-        pan: {
-          enabled: true,
-          mode: "x",
-        },
-        zoom: {
-          drag: {
-            enabled: true,
-            borderColor: "rgba(0,0,0,0.3)",
-            borderWidth: 1,
-            backgroundColor: "rgba(0,0,0,0.1)",
-          },
-          mode: "x",
-          onZoomComplete: ({ chart }) => {
-            const startIdx = chart.scales.x.min;
-            const endIdx = chart.scales.x.max;
-            // You can update derived values or trigger events here
-          },
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        title: {
-          display: true,
-          text: "USD ($)",
-        },
-      },
-      x: {
-        title: {
-          display: true,
-          text: "Date",
-        },
-      },
-    },
-  };
+  if (chartData.length < 2)
+    return (
+      <p className="graph-placeholder">Add more entries to see the chart.</p>
+    );
+
+  // overall stats for a quick overview
+  const first = parseFloat(sorted[0].total_networth);
+  const last = parseFloat(sorted[sorted.length - 1].total_networth);
+  const overallChange = last - first;
+  const overallPct = ((overallChange / first) * 100).toFixed(2);
 
   return (
-    <div className="graph-container">
-      <h3>Net Worth Over Time</h3>
-      <div className="canvas-container">
-        <Line ref={chartRef} data={data} options={options} />
-      </div>
-      <button onClick={handleResetZoom} className="revert-button">
-        Revert Zoom
-      </button>
-      <div className="prediction-text">
+    <div className="networth-graph">
+      <h3>Net‑Worth Over Time</h3>
+
+      {/* ---- Line chart – total net‑worth ------------------------------------- */}
+      <ResponsiveContainer width="100%" height={340}>
+        <LineChart
+          data={chartData}
+          margin={{ top: 15, right: 30, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis tickFormatter={(v) => `$${v / 1000}k`} />
+          <Tooltip formatter={(v) => `$${v}`} />
+          <Legend verticalAlign="top" />
+          <Line
+            type="monotone"
+            dataKey="total"
+            stroke="#2c3e50"
+            name="Total Net‑Worth"
+            dot={{ r: 4 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      {/* ---- Bar chart – Δ per period ------------------------------------------ */}
+      <h4 className="mt-4">Period Δ (Δ from previous entry)</h4>
+      <ResponsiveContainer width="100%" height={260}>
+        <BarChart
+          data={chartData}
+          margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis tickFormatter={(v) => `$${v / 1000}k`} />
+          <Tooltip formatter={(v) => `$${v}`} />
+          <Legend verticalAlign="top" />
+          <Bar dataKey="delta" fill="#e74c3c" name="Δ (change)" />
+        </BarChart>
+      </ResponsiveContainer>
+
+      {/* ---- Summary stats ---------------------------------------------------- */}
+      <div className="summary-stats mt-4">
         <p>
-          📈 Based on your current trend:
-          <br />
-          <strong>Net Worth in 5 years:</strong> $
-          {futureNetWorth5.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          })}
-          <br />
-          <strong>Net Worth in 10 years:</strong> $
-          {futureNetWorth10.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          })}
-          <br />
-          <strong>Total Assets in 5 years:</strong> $
-          {futureAssets5.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-          <br />
-          <strong>Total Assets in 10 years:</strong> $
-          {futureAssets10.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          <strong>Current Net‑Worth:</strong> $
+          {parseFloat(last).toLocaleString()}
+        </p>
+        <p>
+          <strong>Overall Δ:</strong>{" "}
+          <span
+            className={overallChange >= 0 ? "diff-positive" : "diff-negative"}
+          >
+            {overallChange >= 0 ? "+" : ""}
+            {overallChange.toFixed(2)} ({overallPct}%)
+          </span>
         </p>
       </div>
     </div>

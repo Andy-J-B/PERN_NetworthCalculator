@@ -1,8 +1,11 @@
-import React, { Fragment, useState } from "react";
+/* client/src/components/Input.js */
+import React, { useState, useContext } from "react";
+import { NetWorthContext } from "../App";
+import Toast from "./Toast";
 import "../css/Input.css";
 
 const Input = () => {
-  const initialValues = {
+  const initVals = {
     cash_on_hand: "",
     cash_in_bank: "",
     accounts_receivable: "",
@@ -11,96 +14,152 @@ const Input = () => {
     us_stock: "",
   };
 
-  const [allValues, setAllValues] = useState(initialValues);
+  const [values, setValues] = useState(initVals);
+  const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState(null);
+  const { addNetWorth, apiBase } = useContext(NetWorthContext);
 
-  const changeHandler = (e) => {
-    setAllValues({ ...allValues, [e.target.name]: parseFloat(e.target.value) });
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    // keep empty string for controlled input, otherwise parseFloat
+    setValues((prev) => ({
+      ...prev,
+      [name]: value === "" ? "" : parseFloat(value),
+    }));
   };
 
-  const onSubmitForm = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
-      const sumValues = (obj) => Object.values(obj).reduce((a, b) => a + b, 0);
-      const body = { allValues };
-      let nontoday = Object.assign({}, body["allValues"]);
-      delete nontoday["accounts_payable"];
-      delete nontoday["total_networth"];
-      body["allValues"]["total_networth"] = (
-        sumValues(nontoday) - parseFloat(body["allValues"]["accounts_payable"])
-      ).toFixed(2);
-      console.log(nontoday, body["allValues"]);
-      const response = await fetch(
-        "http://localhost:2938/networth_calculator",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body["allValues"]),
-        }
-      );
+      // ---- 1️⃣ calculate total net‑worth on the client ---------------
+      const {
+        cash_on_hand = 0,
+        cash_in_bank = 0,
+        accounts_receivable = 0,
+        accounts_payable = 0,
+        canada_stock = 0,
+        us_stock = 0,
+      } = values;
 
-      window.location = "/";
+      const total_networth = (
+        +cash_on_hand +
+        +cash_in_bank +
+        +accounts_receivable +
+        +canada_stock +
+        +us_stock -
+        +accounts_payable
+      ).toFixed(2);
+
+      const body = {
+        cash_on_hand,
+        cash_in_bank,
+        accounts_receivable,
+        accounts_payable,
+        canada_stock,
+        us_stock,
+        total_networth,
+      };
+
+      // ---- 2️⃣ POST to the API ---------------------------------------
+      const resp = await fetch(`${apiBase}/networth_calculator`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!resp.ok) throw new Error("Server error");
+
+      const saved = await resp.json();
+
+      // ---- 3️⃣ Optimistically update UI -------------------------------
+      addNetWorth(saved);
+      setToast({ message: "Snapshot added! 🎉", type: "success" });
+      setValues(initVals); // clear form
     } catch (err) {
-      console.error(err.message);
+      console.error(err);
+      setToast({
+        message: err.message || "Something went wrong",
+        type: "error",
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <Fragment>
-      <div className="form-container">
-        <h1>Net Worth Calculator</h1>
-        <form onSubmit={onSubmitForm}>
-          <input
-            type="number"
-            id="cash_on_hand"
-            name="cash_on_hand"
-            value={allValues.cash_on_hand}
-            onChange={changeHandler}
-            placeholder="Cash On Hand"
-          />
-          <input
-            type="number"
-            id="cash_in_bank"
-            name="cash_in_bank"
-            value={allValues.cash_in_bank}
-            onChange={changeHandler}
-            placeholder="Cash In Bank"
-          />
-          <input
-            type="number"
-            id="accounts_receivable"
-            name="accounts_receivable"
-            value={allValues.accounts_receivable}
-            onChange={changeHandler}
-            placeholder="Accounts Receivable"
-          />
-          <input
-            type="number"
-            id="accounts_payable"
-            name="accounts_payable"
-            value={allValues.accounts_payable}
-            onChange={changeHandler}
-            placeholder="Accounts Payable"
-          />
-          <input
-            type="number"
-            id="canada_stock"
-            name="canada_stock"
-            value={allValues.canada_stock}
-            onChange={changeHandler}
-            placeholder="Canada Stocks"
-          />
-          <input
-            type="number"
-            id="us_stock"
-            name="us_stock"
-            value={allValues.us_stock}
-            onChange={changeHandler}
-            placeholder="US Stocks"
-          />
-          <button type="submit">Add</button>
-        </form>
-      </div>
-    </Fragment>
+    <section className="form-section">
+      <h2>Add New Snapshot</h2>
+
+      <form className="networth-form" onSubmit={onSubmit}>
+        <input
+          type="number"
+          name="cash_on_hand"
+          placeholder="Cash on hand"
+          value={values.cash_on_hand}
+          onChange={onChange}
+          step="0.01"
+          required
+        />
+        <input
+          type="number"
+          name="cash_in_bank"
+          placeholder="Cash in bank"
+          value={values.cash_in_bank}
+          onChange={onChange}
+          step="0.01"
+          required
+        />
+        <input
+          type="number"
+          name="accounts_receivable"
+          placeholder="Accounts receivable"
+          value={values.accounts_receivable}
+          onChange={onChange}
+          step="0.01"
+          required
+        />
+        <input
+          type="number"
+          name="accounts_payable"
+          placeholder="Accounts payable"
+          value={values.accounts_payable}
+          onChange={onChange}
+          step="0.01"
+          required
+        />
+        <input
+          type="number"
+          name="canada_stock"
+          placeholder="Canada stocks"
+          value={values.canada_stock}
+          onChange={onChange}
+          step="0.01"
+          required
+        />
+        <input
+          type="number"
+          name="us_stock"
+          placeholder="US stocks"
+          value={values.us_stock}
+          onChange={onChange}
+          step="0.01"
+          required
+        />
+        <button type="submit" disabled={submitting}>
+          {submitting ? "Saving…" : "Add"}
+        </button>
+      </form>
+
+      {/* Toast – tiny overlay that disappears after 3 s */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+    </section>
   );
 };
 
