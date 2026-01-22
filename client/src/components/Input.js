@@ -70,6 +70,8 @@ const Input = () => {
         total_networth,
       };
 
+      console.log(body);
+
       const resp = await fetch(`${apiBase}/networth_calculator`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
