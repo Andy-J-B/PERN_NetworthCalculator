@@ -28,7 +28,7 @@ const NetWorthGraph = ({ networths }) => {
     (a, b) => new Date(a.today_date) - new Date(b.today_date)
   );
 
-  // we’ll keep a running reference to the previous net‑worth
+  // we'll keep a running reference to the previous net‑worth
   let previousNet = null;
 
   const chartData = sorted.map((row) => {
@@ -50,6 +50,9 @@ const NetWorthGraph = ({ networths }) => {
 
     const networth =
       parseFloat(row.total_networth) || assets - accounts_payable;
+
+    // Gross Worth = net worth + accounts payable (total assets before liabilities)
+    const grossworth = networth + accounts_payable;
 
     // ----- Δ (difference) ---------------------------------------------
     // 1️⃣ try the value that may already be stored in the DB
@@ -78,6 +81,7 @@ const NetWorthGraph = ({ networths }) => {
       assets,
       liabilities: accounts_payable,
       networth,
+      grossworth,
       delta, // ← always a real number (0 for the very first point)
     };
   });
@@ -116,7 +120,7 @@ const NetWorthGraph = ({ networths }) => {
   const buildSeries = () => {
     const series = [];
 
-    // Net‑worth line (always shown in “networth” and “all”)
+    // Net‑worth line (always shown in "networth" and "all")
     if (view === "all" || view === "networth") {
       series.push(
         <Line
@@ -130,7 +134,22 @@ const NetWorthGraph = ({ networths }) => {
       );
     }
 
-    // Stacked assets area (shown in “assets” and “all”)
+    // Gross Worth line (net worth + accounts payable = total assets)
+    if (view === "all") {
+      series.push(
+        <Line
+          key="grossworth"
+          type="monotone"
+          dataKey="grossworth"
+          stroke="#16a085"
+          name="Gross Worth"
+          dot={{ r: 4 }}
+          strokeDasharray="5 5"
+        />
+      );
+    }
+
+    // Stacked assets area (shown in "assets" and "all")
     if (view === "all" || view === "assets") {
       series.push(
         <Area
@@ -181,7 +200,7 @@ const NetWorthGraph = ({ networths }) => {
       );
     }
 
-    // Liabilities line (shown in “liabilities” and “all”)
+    // Liabilities line (shown in "liabilities" and "all")
     if (view === "all" || view === "liabilities") {
       series.push(
         <Line
@@ -196,7 +215,7 @@ const NetWorthGraph = ({ networths }) => {
     }
 
     // Stocks‑only view – two separate lines for each market
-    if (view === "all" || view === "stocks") {
+    if (view === "stocks") {
       series.push(
         <Line
           key="canada_stock_line"
@@ -275,6 +294,9 @@ const NetWorthGraph = ({ networths }) => {
       <div className="summary-stats mt-4">
         <p>
           <strong>Current Net‑Worth:</strong> ${lastNet.toLocaleString()}
+        </p>
+        <p>
+          <strong>Current Gross Worth:</strong> ${chartData[chartData.length - 1].grossworth.toLocaleString()}
         </p>
         <p>
           <strong>Total Assets:</strong> $
