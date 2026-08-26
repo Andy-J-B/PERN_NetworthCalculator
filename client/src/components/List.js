@@ -1,98 +1,213 @@
-import React, { Fragment, useEffect, useState } from "react";
-import Edit from "./Edit.js";
+// ---------------------------------------------------------------
+// client/src/components/List.js – updated version
+// ---------------------------------------------------------------
+
+import React, { Fragment, useContext, useState } from "react";
+import { NetWorthContext } from "../App";
+import Edit from "./Edit";
+import NetWorthGraph from "./Graph";
 import "../css/List.css";
-import NetWorthGraph from "./Graph.js";
 
 const List = () => {
-  const [networths, setNetworths] = useState([]);
+  // -----------------------------------------------------------
+  // Context values
+  // -----------------------------------------------------------
+  const {
+    networths,
+    loading,
+    deleteNetWorth,
+    apiBase,
+    refresh, // optional – you can expose it from App if you like
+  } = useContext(NetWorthContext);
 
-  // delete networth function
+  // -----------------------------------------------------------
+  // Local UI state – only for delete‑spinner handling
+  // -----------------------------------------------------------
+  const [deletingId, setDeletingId] = useState(null);
 
-  const formatDate = (date) => {
-    const civicNumber = date.substr(0, date.indexOf("T"));
-    return civicNumber;
+  // -----------------------------------------------------------
+  // Debug – you can keep it or delete it – does not affect UI
+  // -----------------------------------------------------------
+  console.log(
+    "%c<List> rendered – rows:",
+    "color:#8b5cf6;font-weight:bold",
+    networths.length
+  );
+
+  // -----------------------------------------------------------
+  // Helper – format the ISO date coming from PostgreSQL
+  // -----------------------------------------------------------
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
-  const deleteNW = async (id) => {
+  // -----------------------------------------------------------
+  // DELETE handler – talks to the API **and** updates the context
+  // -----------------------------------------------------------
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this entry?")) return;
+    setDeletingId(id);
     try {
-      const deleteNW = await fetch(
-        `http://localhost:2938/networth_calculator/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const resp = await fetch(`${apiBase}/networth_calculator/${id}`, {
+        method: "DELETE",
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-      // Make it refresh page
-
-      setNetworths(networths.filter((networth) => networth.networth_id !== id)); // filters networths
+      // Update context (causes UI re‑render)
+      deleteNetWorth(id);
+      console.log("%cDelete successful – id:", "color:#10b981", id);
     } catch (err) {
-      console.error(err.message);
+      console.error("%cDelete failed –", "color:#ef4444", err);
+      alert("Could not delete – see console for details.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  const getNWs = async () => {
-    try {
-      const response = await fetch("http://localhost:2938/networth_calculator");
-      const jsonData = await response.json();
-
-      setNetworths(jsonData);
-    } catch (err) {
-      console.log(err.message);
+  // -----------------------------------------------------------
+  // Helper – calculate the Δ that should be displayed.
+  // If the row already has a stored `difference` column we use it.
+  // Otherwise we compute it on‑the‑fly from the previous row.
+  // -----------------------------------------------------------
+  const getDelta = (row, idx) => {
+    // 1️⃣ Prefer the stored value (may be null)
+    if (row.difference !== undefined && row.difference !== null) {
+      return row.difference;
     }
+
+    // 2️⃣ Fall back to a computed value using the previous row
+    const prev = networths[idx - 1];
+    if (!prev) return null; // first row – no previous value
+
+    // Both totals are strings from the DB → coerce to Number
+    const diff = Number(row.total_networth) - Number(prev.total_networth);
+    // if the conversion gave NaN (bad data) we treat it as null
+    return isNaN(diff) ? null : diff;
   };
 
-  useEffect(() => {
-    getNWs();
-  }, []);
+  // -----------------------------------------------------------
+  // UI – loading, empty state, table, graph
+  // -----------------------------------------------------------
+  if (loading) {
+    return (
+      <div className="loader">
+        <span className="spinner" /> Loading…
+      </div>
+    );
+  }
+
+  if (!networths.length) {
+    return (
+      <p className="empty-state">No records yet – add a snapshot above.</p>
+    );
+  }
 
   return (
     <Fragment>
-      {" "}
-      <table className="table mt-5 text-center">
-        <thead>
-          <tr>
-            <th>Date of Input</th>
-            <th>Cash On Hand</th>
-            <th>Cash In Bank</th>
-            <th>Accounts Receivable</th>
-            <th>Accounts Payable</th>
-            <th>Canadian Stocks</th>
-            <th>US Stocks</th>
-            <th>Total Networth</th>
+      {/* ────── Card‑styled container (same as Input) ────── */}
+      <section className="list-card">
+        <div className="list-header">
+          <h2 className="list-title">Historical Snapshots</h2>
+          {/* Optional manual refresh (uncomment in App if you expose it) */}
+          {/* {refresh && (
+            <button className="btn btn-refresh" onClick={refresh}>
+              ↻ Refresh
+            </button>
+          )} */}
+        </div>
 
-            <th>Edit</th>
-            <th>Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-          {networths.map((networth) => (
-            <tr key={networth.networth_id}>
-              <td>{formatDate(networth.today_date)}</td>
-              <td>{networth.cash_on_hand}</td>
-              <td>{networth.cash_in_bank}</td>
-              <td>{networth.accounts_receivable}</td>
-              <td>{networth.accounts_payable}</td>
-              <td>{networth.canada_stock}</td>
-              <td>{networth.us_stock}</td>
-              <td>{networth.total_networth}</td>
-              <td>
-                <Edit networth={networth} />
-              </td>
-              <td>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => deleteNW(networth.networth_id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="graph-container mt-5">
-        <NetWorthGraph networths={networths} />
-      </div>
+        {/* ────── Table wrapper – scroll on narrow screens ────── */}
+        <div className="table-wrapper">
+          <table className="networth-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Cash On Hand</th>
+                <th>Cash In Bank</th>
+                <th>Accounts Receivable</th>
+                <th>Accounts Payable</th>
+                <th>Canada Stocks</th>
+                <th>US Stocks</th>
+                <th>Total Net‑Worth</th>
+                <th>Δ</th>
+                <th>Edit</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {networths.map((row, idx) => {
+                const delta = getDelta(row, idx);
+                // class for colour coding
+                const deltaClass =
+                  delta > 0
+                    ? "diff-positive"
+                    : delta < 0
+                      ? "diff-negative"
+                      : "";
+
+                // formatted display – dash for unknown
+                const deltaDisplay =
+                  delta === null || delta === undefined
+                    ? "-"
+                    : `${delta > 0 ? "▲" : delta < 0 ? "▼" : ""} ${Number(
+                        delta
+                      ).toFixed(2)}`;
+
+                return (
+                  <tr key={row.networth_id}>
+                    <td>{formatDate(row.today_date)}</td>
+                    <td>{row.cash_on_hand}</td>
+                    <td>{row.cash_in_bank}</td>
+                    <td>{row.accounts_receivable}</td>
+                    <td>{row.accounts_payable}</td>
+                    <td>{row.canada_stock}</td>
+                    <td>{row.us_stock}</td>
+                    <td>{row.total_networth}</td>
+
+                    {/* Δ column – colour and arrow */}
+                    <td className={deltaClass}>{deltaDisplay}</td>
+
+                    {/* Edit (your own component already renders a button) */}
+                    <td>
+                      <Edit networth={row} />
+                    </td>
+
+                    {/* Delete – shows spinner while request is pending */}
+                    <td>
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => handleDelete(row.networth_id)}
+                        disabled={deletingId === row.networth_id}
+                      >
+                        {deletingId === row.networth_id ? (
+                          <span className="spinner btn-spinner" />
+                        ) : (
+                          <span className="icon-trash" aria-hidden="true">
+                            🗑️
+                          </span>
+                        )}
+                        <span className="sr-only">Delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ────── Graph (unchanged) ────── */}
+        <section className="graph-wrapper mt-5">
+          <NetWorthGraph networths={networths} />
+        </section>
+      </section>
     </Fragment>
   );
 };

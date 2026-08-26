@@ -1,31 +1,82 @@
-.graph-container {
-  width: 100%;
-  max-width: 800px;
-  margin: 30px auto; /* Center the graph */
-  background: #f8f9fa; /* Light background for contrast */
-  border-radius: 15px; /* Rounded corners */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow */
-  padding: 20px; /* Spacing around the graph */
+/* ---------------------------------------------------------------
+   client/src/css/Graph.css – styling for the new multi‑view chart
+   --------------------------------------------------------------- */
+
+.networth-graph {
+  background: #fff;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
 }
 
-.graph-container h3 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: #333;
-  text-align: center;
+/* Title spacing */
+.networth-graph h3,
+.networth-graph h4 {
+  margin: 0 0 0.8rem;
+  font-weight: 600;
 }
 
-.canvas-container {
-  height: 400px; /* Set height of the graph */
+/* ---------------------------------------------------------------
+   View selector – a row of small toggle buttons
+   --------------------------------------------------------------- */
+.view-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
 }
 
-.revert-button {
-  margin-top: 10px;
+.view-btn {
+  background: #ecf0f1;
+  border: 1px solid #bdc3c7;
+  color: #2c3e50;
   padding: 6px 12px;
-  background-color: #2980b9;
-  color: white;
-  border: none;
+  font-size: 0.9rem;
   border-radius: 5px;
   cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.view-btn:hover {
+  background: #d0d7de;
+  border-color: #95a5a6;
+}
+
+.view-btn.active {
+  background: #27ae60;
+  border-color: #219150;
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------
+   Summary stats (shown below the chart)
+   --------------------------------------------------------------- */
+.summary-stats p {
+  margin: 0.3rem 0;
+  font-size: 0.95rem;
+}
+
+/* ---------------------------------------------------------------
+   Placeholder when there isn’t enough data
+   --------------------------------------------------------------- */
+.graph-placeholder {
+  text-align: center;
+  color: #777;
+  font-style: italic;
+  margin: 2rem 0;
+}
+
+/* ---------------------------------------------------------------
+   Responsive tweaks
+   --------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .view-selector {
+    justify-content: center;
+  }
+  .view-btn {
+    flex: 1 1 45%;
+    text-align: center;
+  }
 }
