@@ -28,6 +28,13 @@ const NetWorthGraph = ({ networths }) => {
     (a, b) => new Date(a.today_date) - new Date(b.today_date)
   );
 
+  // If the series spans more than one calendar year, "Mar 4" is
+  // ambiguous on the x-axis – include the year in that case.
+  const spansYears =
+    sorted.length > 1 &&
+    new Date(sorted[0].today_date).getFullYear() !==
+      new Date(sorted[sorted.length - 1].today_date).getFullYear();
+
   // we'll keep a running reference to the previous net‑worth
   let previousNet = null;
 
@@ -55,24 +62,21 @@ const NetWorthGraph = ({ networths }) => {
     const grossworth = networth + accounts_payable;
 
     // ----- Δ (difference) ---------------------------------------------
-    // 1️⃣ try the value that may already be stored in the DB
-    const storedDiff = row.difference != null ? Number(row.difference) : null;
-
-    // 2️⃣ if DB value is missing or NaN, compute from the previous row
-    const computedDiff = previousNet !== null ? networth - previousNet : 0; // first row => 0
-
-    const delta =
-      storedDiff != null && !isNaN(storedDiff) ? storedDiff : computedDiff;
+    // Always derived from the previous row. The `networth` table has no
+    // `difference` column, so there is no stored value to prefer.
+    const delta = previousNet !== null ? networth - previousNet : 0;
 
     // remember this net‑worth for the next iteration
     previousNet = networth;
 
     // ----- final object passed to Recharts ----------------------------
     return {
-      date: new Date(row.today_date).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-      }),
+      date: new Date(row.today_date).toLocaleDateString(
+        undefined,
+        spansYears
+          ? { year: "numeric", month: "short", day: "numeric" }
+          : { month: "short", day: "numeric" }
+      ),
       cash_on_hand,
       cash_in_bank,
       accounts_receivable,
@@ -101,7 +105,10 @@ const NetWorthGraph = ({ networths }) => {
   const firstNet = chartData[0].networth;
   const lastNet = chartData[chartData.length - 1].networth;
   const overallChange = lastNet - firstNet;
-  const overallPct = ((overallChange / firstNet) * 100).toFixed(2);
+  // Guard: a zero opening balance would otherwise render "Infinity%"
+  const overallPct = firstNet
+    ? ((overallChange / firstNet) * 100).toFixed(1)
+    : null;
 
   // -----------------------------------------------------------------
   // View selector buttons
@@ -244,7 +251,7 @@ const NetWorthGraph = ({ networths }) => {
           dataKey="delta"
           barSize={12}
           fill="#7f8c8d"
-          name="Δ (Δ per period)"
+          name="Change per period"
         />
       );
     }
@@ -312,7 +319,8 @@ const NetWorthGraph = ({ networths }) => {
             className={overallChange >= 0 ? "diff-positive" : "diff-negative"}
           >
             {overallChange >= 0 ? "+" : ""}
-            {overallChange.toFixed(2)} ({overallPct}%)
+            {overallChange.toFixed(2)}
+            {overallPct !== null ? ` (${overallPct}%)` : ""}
           </span>
         </p>
       </div>
