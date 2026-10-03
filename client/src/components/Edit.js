@@ -1,20 +1,32 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { NetWorthContext } from "../App";
 import "../css/Edit.css";
 
 const Edit = ({ networth }) => {
   const { updateNetWorth, apiBase } = useContext(NetWorthContext);
   const [editing, setEditing] = useState(false);
-  const [values, setValues] = useState({
-    cash_on_hand: networth.cash_on_hand ?? "",
-    cash_in_bank: networth.cash_in_bank ?? "",
-    accounts_receivable: networth.accounts_receivable ?? "",
-    accounts_payable: networth.accounts_payable ?? "",
-    canada_stock: networth.canada_stock ?? "",
-    us_stock: networth.us_stock ?? "",
-    total_networth: networth.total_networth ?? "",
-    today_date: networth.today_date ? networth.today_date.split("T")[0] : "",
-  });
+
+  const valuesFrom = useCallback(
+    (row) => ({
+      cash_on_hand: row.cash_on_hand ?? "",
+      cash_in_bank: row.cash_in_bank ?? "",
+      accounts_receivable: row.accounts_receivable ?? "",
+      accounts_payable: row.accounts_payable ?? "",
+      canada_stock: row.canada_stock ?? "",
+      us_stock: row.us_stock ?? "",
+      total_networth: row.total_networth ?? "",
+      today_date: row.today_date ? row.today_date.split("T")[0] : "",
+    }),
+    []
+  );
+
+  const [values, setValues] = useState(() => valuesFrom(networth));
+
+  const openEditor = () => {
+    setValues(valuesFrom(networth));
+    setEditing(true);
+  };
 
   const changeHandler = (e) => {
     const { name, value } = e.target;
@@ -78,101 +90,76 @@ const Edit = ({ networth }) => {
 
   return (
     <>
-      <button className="btn btn-edit" onClick={() => setEditing(true)}>
+      <button className="btn btn-edit" onClick={openEditor}>
         Edit
       </button>
 
-      {editing && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Edit snapshot</h3>
-            <form onSubmit={submitHandler}>
-              <input
-                type="date"
-                name="today_date"
-                value={values.today_date}
-                onChange={changeHandler}
-                required
-              />
-              <input
-                type="number"
-                name="cash_on_hand"
-                placeholder="Cash on hand"
-                value={values.cash_on_hand}
-                onChange={changeHandler}
-                step="0.01"
-                required
-              />
-              <input
-                type="number"
-                name="cash_in_bank"
-                placeholder="Cash in bank"
-                value={values.cash_in_bank}
-                onChange={changeHandler}
-                step="0.01"
-                required
-              />
-              <input
-                type="number"
-                name="accounts_receivable"
-                placeholder="Accounts receivable"
-                value={values.accounts_receivable}
-                onChange={changeHandler}
-                step="0.01"
-                required
-              />
-              <input
-                type="number"
-                name="accounts_payable"
-                placeholder="Accounts payable"
-                value={values.accounts_payable}
-                onChange={changeHandler}
-                step="0.01"
-                required
-              />
-              <input
-                type="number"
-                name="canada_stock"
-                placeholder="Canada stocks"
-                value={values.canada_stock}
-                onChange={changeHandler}
-                step="0.01"
-                required
-              />
-              <input
-                type="number"
-                name="us_stock"
-                placeholder="US stocks"
-                value={values.us_stock}
-                onChange={changeHandler}
-                step="0.01"
-                required
-              />
-              {/* total_networth optional – auto‑calculated if left empty */}
-              <input
-                type="number"
-                name="total_networth"
-                placeholder="Total net‑worth (auto‑calc if empty)"
-                value={values.total_networth}
-                onChange={changeHandler}
-                step="0.01"
-              />
-              <div className="modal-actions">
-                <button type="submit" className="btn btn-primary">
-                  Save
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setEditing(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {editing &&
+        createPortal(
+          <div
+            className="nw-modal-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setEditing(false);
+            }}
+          >
+            <div className="nw-modal">
+              <h3>Edit snapshot</h3>
+              <form onSubmit={submitHandler}>
+                {[
+                  { name: "today_date", type: "date", step: undefined },
+                  { name: "cash_on_hand", type: "number", step: "0.01" },
+                  { name: "cash_in_bank", type: "number", step: "0.01" },
+                  {
+                    name: "accounts_receivable",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  {
+                    name: "accounts_payable",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  { name: "canada_stock", type: "number", step: "0.01" },
+                  { name: "us_stock", type: "number", step: "0.01" },
+                ].map((f) => (
+                  <input
+                    key={f.name}
+                    type={f.type}
+                    name={f.name}
+                    className="form-control"
+                    placeholder={f.name.replace(/_/g, " ")}
+                    value={values[f.name]}
+                    onChange={changeHandler}
+                    step={f.step}
+                    required
+                  />
+                ))}
+                <input
+                  type="number"
+                  name="total_networth"
+                  className="form-control"
+                  placeholder="Total net-worth (auto-calc if empty)"
+                  value={values.total_networth}
+                  onChange={changeHandler}
+                  step="0.01"
+                />
+                <div className="nw-modal-actions">
+                  <button type="submit" className="btn btn-primary">
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setEditing(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 };
