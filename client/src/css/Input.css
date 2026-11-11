@@ -1,154 +1,81 @@
-/* client/src/css/Input.css */
+/* ---------------------------------------------------------------
+   client/src/css/Input.css – the "add a snapshot" card
+   --------------------------------------------------------------- */
 
-/* --------------------------------------------------------------
-   Global CSS variables – easy to tweak the colour palette
-   -------------------------------------------------------------- */
-:root {
-  --card-bg: #ffffff;
-  --card-bg-gradient: linear-gradient(135deg, #f7f7f7, #eaeaea);
-  --primary: #27ae60;
-  --primary-dark: #219150;
-  --accent: #3498db;
-  --text-primary: #333333;
-  --text-muted: #666666;
-  --border: #dddddd;
-}
-
-/* --------------------------------------------------------------
-   Card‑style container for the whole form
-   -------------------------------------------------------------- */
 .form-container {
-  max-width: 800px;
-  margin: 40px auto;
-  padding: 30px 35px;
-  border-radius: 12px;
-  background: var(--card-bg-gradient);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
-/* --------------------------------------------------------------
-   Title
-   -------------------------------------------------------------- */
-.form-container h1 {
-  font-size: 28px;
-  margin-bottom: 24px;
-  color: var(--text-primary);
-  text-align: center;
-  font-weight: 600;
-}
-
-/* --------------------------------------------------------------
-   Form layout – responsive grid
-   -------------------------------------------------------------- */
-.networth-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 18px;
-}
-
-/* --------------------------------------------------------------
-   Input fields
-   -------------------------------------------------------------- */
-.networth-form input {
-  padding: 12px 14px;
-  font-size: 15px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
   background: #fff;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  border-radius: 12px;
+  padding: 26px 28px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border, #ddd);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin-bottom: 28px;
 }
 
-/* Focus style – accent colour */
-.networth-form input:focus {
-  border-color: var(--accent);
-  outline: none;
-  box-shadow: 0 0 6px rgba(52, 152, 219, 0.35);
+.form-title {
+  margin: 0 0 20px 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--bg-header, #2c3e50);
 }
 
-/* --------------------------------------------------------------
-   Total preview (live calculation)
-   -------------------------------------------------------------- */
-.total-preview {
-  grid-column: 1 / -1; /* spans whole row */
+.networth-form {
+  display: block;
+}
+
+.networth-form button[type="submit"] {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
-  margin-top: 10px;
-}
-
-.total-preview span {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-}
-.total-preview strong {
-  font-size: 1.3rem;
-  color: var(--text-primary);
-}
-
-/* --------------------------------------------------------------
-   Submit button – primary colour, disabled & spinner
-   -------------------------------------------------------------- */
-.networth-form button {
-  grid-column: 1 / -1; /* full‑width button */
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  padding: 14px 20px;
-  font-size: 16px;
-  background-color: var(--primary);
+  margin-top: 20px;
+  padding: 13px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--color-primary, #27ae60);
   color: #fff;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 600;
-  text-transform: uppercase;
   transition:
-    background-color 0.2s ease,
+    background 0.15s ease,
     transform 0.1s ease;
 }
 
-/* Hover / active */
-.networth-form button:hover:not([disabled]) {
-  background-color: var(--primary-dark);
-  transform: translateY(-2px);
+.networth-form button[type="submit"]:hover:not([disabled]) {
+  background: var(--color-primary-dark, #219150);
+  transform: translateY(-1px);
 }
-.networth-form button:active:not([disabled]) {
+
+.networth-form button[type="submit"]:active:not([disabled]) {
   transform: translateY(0);
 }
 
-/* Disabled state */
-.networth-form button[disabled] {
-  background-color: #b2b2b2;
+.networth-form button[type="submit"]:disabled {
+  background: #b9c0c4;
   cursor: not-allowed;
-  opacity: 0.85;
 }
 
-/* Simple CSS spinner (tiny) that appears inside the button */
 .spinner {
   display: inline-block;
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.55);
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  margin-right: 6px;
-  vertical-align: middle;
 }
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-/* --------------------------------------------------------------
-   Small responsive tweak – make inputs a little larger on mobile
-   -------------------------------------------------------------- */
-@media (max-width: 500px) {
-  .networth-form {
-    grid-template-columns: 1fr;
+@media (max-width: 520px) {
+  .form-container {
+    padding: 20px 16px;
   }
 }

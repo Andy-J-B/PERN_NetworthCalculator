@@ -4,81 +4,185 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 25, 35, 0.55);
+  backdrop-filter: blur(2px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  padding: 32px 16px;
   z-index: 1055;
-  padding: 20px;
+  animation: nwFadeIn 0.15s ease-out;
 }
 
 .nw-modal {
   display: block;
-  background: var(--bg-card, #ffffff);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  padding: 24px;
+  position: relative;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
   width: 100%;
-  max-width: 420px;
-  max-height: 90vh;
-  overflow-y: auto;
-  color: var(--color-text, #333333);
+  max-width: 680px;
+  margin: auto;
+  color: var(--color-text, #333);
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  animation: nwSlideUp 0.18s ease-out;
 }
 
-.nw-modal h3 {
-  margin: 0 0 20px 0;
-  font-size: 1.1rem;
+.nw-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border, #ddd);
+}
+
+.nw-modal-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: var(--bg-header, #2c3e50);
 }
 
-.nw-modal form {
+.nw-modal-close {
+  border: none;
+  background: transparent;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--color-muted, #777);
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.nw-modal-close:hover {
+  color: var(--color-danger, #e74c3c);
+  background: #fdecea;
+}
+
+.nw-modal-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
   margin: 0;
+  padding: 22px 24px 24px;
 }
 
-.nw-modal .form-control {
-  display: block;
-  width: 100%;
-  padding: 9px 10px;
-  font-size: 0.9rem;
-  font-family: inherit;
-  line-height: 1.5;
-  color: var(--color-text, #333333);
-  background-color: #fff;
-  border: 1px solid var(--border, #dddddd);
-  border-radius: 5px;
+.nw-modal-date {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 220px;
 }
 
-.nw-modal .form-control:focus {
-  border-color: var(--color-info, #3498db);
+.nw-modal-date input {
+  padding: 10px 11px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.95rem;
+  background: #fff;
+  color: var(--color-text, #333);
+}
+
+.nw-modal-date input:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
+  border-color: var(--color-info, #3498db);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.18);
 }
 
 .nw-modal-actions {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
-  margin-top: 10px;
+  padding-top: 4px;
+}
+
+.nw-modal-actions .btn {
+  padding: 9px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.nw-modal-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.nw-modal-actions .btn-primary {
+  background: var(--color-primary, #27ae60);
+  color: #fff;
+}
+
+.nw-modal-actions .btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-dark, #219150);
+}
+
+.nw-modal-actions .btn-secondary {
+  background: transparent;
+  color: var(--color-muted, #555);
+  border: 1px solid var(--border, #ddd);
+}
+
+.nw-modal-actions .btn-secondary:hover:not(:disabled) {
+  background: #f3f4f5;
 }
 
 .btn-edit {
   background: var(--color-info, #3498db);
   color: #fff;
+  font-weight: 600;
 }
 
 .btn-edit:hover {
   background: #2980b9;
 }
 
-.btn-secondary {
-  background: var(--color-muted, #555555);
-  color: #fff;
+@keyframes nwFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.btn-secondary:hover {
-  background: #444444;
+@keyframes nwSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nw-modal-overlay,
+  .nw-modal {
+    animation: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .nw-modal-overlay {
+    padding: 0;
+  }
+  .nw-modal {
+    border-radius: 0;
+    min-height: 100vh;
+  }
+  .nw-modal-header,
+  .nw-modal-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .nw-modal-actions .btn {
+    flex: 1;
+  }
 }

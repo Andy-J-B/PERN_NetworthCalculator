@@ -9,90 +9,77 @@ import "./App.css";
    -------------------------------------------------------------- */
 export const NetWorthContext = createContext();
 
-/* --------------------------------------------------------------
-   Main App component
-   -------------------------------------------------------------- */
 function App() {
-  // --------------------------------------------------------------
-  // State that lives in the top‑level and is shared via context
-  // --------------------------------------------------------------
   const [networths, setNetworths] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Base URL for the API – can be overridden with REACT_APP_API_URL
   const apiBase = process.env.REACT_APP_API_URL || "http://localhost:2938";
-
-  // -----------------------------------------------------------------
-  // Debug: this fires every time the component (re)renders
-  // -----------------------------------------------------------------
-  console.log("%c<App> rendered", "color:#3b82f6;font-weight:bold");
 
   // -----------------------------------------------------------------
   // Load **all** rows once – runs again only if the API base URL changes
   // -----------------------------------------------------------------
   useEffect(() => {
-    // encapsulate the async work so we can keep the dependency array tiny
+    let cancelled = false;
+
     const fetchAll = async () => {
-      console.log("%cfetchAll – start", "color:#10b981");
       try {
         const resp = await fetch(`${apiBase}/networth_calculator`);
-        if (!resp.ok) {
-          throw new Error(`HTTP ${resp.status}`);
-        }
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
-        console.log("%cfetchAll – data received:", "color:#10b981", data);
-        setNetworths(data);
+        if (!cancelled) setNetworths(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error("%cfetchAll – error:", "color:#ef4444", err);
+        if (!cancelled) setError(err.message || "Could not reach the server");
       } finally {
-        setLoading(false);
-        console.log("%cfetchAll – finished (loading → false)", "color:#10b981");
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchAll();
-  }, [apiBase]); // <- only runs when the base URL changes
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase]);
 
   // -----------------------------------------------------------------
-  // Helper functions that child components will call
+  // Mutations shared with children via context
   // -----------------------------------------------------------------
-  const addNetWorth = (newRow) => setNetworths((s) => [...s, newRow]);
+  const addNetWorth = (newRow) =>
+    setNetworths((s) => sortByDate([...s, newRow]));
 
   const deleteNetWorth = (id) =>
     setNetworths((s) => s.filter((row) => row.networth_id !== id));
 
   const updateNetWorth = (updatedRow) =>
     setNetworths((s) =>
-      s.map((row) =>
-        row.networth_id === updatedRow.networth_id ? updatedRow : row
-      )
+      sortByDate(
+        s.map((row) =>
+          row.networth_id === updatedRow.networth_id ? updatedRow : row,
+        ),
+      ),
     );
 
-  // -----------------------------------------------------------------
-  // Optional manual refresh (e.g. a “Refresh” button somewhere)
-  // -----------------------------------------------------------------
   const refresh = async () => {
     setLoading(true);
+    setError(null);
     try {
       const resp = await fetch(`${apiBase}/networth_calculator`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
-      console.log("%crefresh – new data:", "color:#3b82f6", data);
-      setNetworths(data);
+      setNetworths(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error("%crefresh – error:", "color:#ef4444", e);
+      setError(e.message || "Could not reach the server");
     } finally {
       setLoading(false);
     }
   };
 
-  // -----------------------------------------------------------------
-  // Provide everything via context – no prop‑drilling needed
-  // -----------------------------------------------------------------
   return (
     <NetWorthContext.Provider
       value={{
         networths,
         loading,
+        error,
         addNetWorth,
         deleteNetWorth,
         updateNetWorth,
@@ -101,12 +88,37 @@ function App() {
       }}
     >
       <div className="container">
-        <h1 className="app-title">📈 Net Worth Tracker</h1>
+        <header className="app-header">
+          <h1 className="app-title">📈 Net Worth Tracker</h1>
+          <p className="app-subtitle">
+            Record a snapshot any time to see how your net worth moves over
+            time.
+          </p>
+        </header>
+
+        {error && (
+          <div className="app-error" role="alert">
+            <span>Couldn't load your data — {error}.</span>
+            <button className="btn btn-ghost" onClick={refresh}>
+              Try again
+            </button>
+          </div>
+        )}
+
         <Input />
         <List />
       </div>
     </NetWorthContext.Provider>
   );
+}
+
+/** Keep the table in chronological order after any local mutation. */
+function sortByDate(rows) {
+  if (!Array.isArray(rows)) return [];
+  return [...rows].sort((a, b) => {
+    const d = new Date(a.today_date) - new Date(b.today_date);
+    return Number.isNaN(d) ? 0 : d || a.networth_id - b.networth_id;
+  });
 }
 
 export default App;

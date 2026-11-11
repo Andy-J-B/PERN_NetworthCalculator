@@ -1,0 +1,154 @@
+/* ---------------------------------------------------------------
+   client/src/css/Fields.css – shared styling for labelled money
+   inputs. Used by both the Add form and the Edit modal.
+   --------------------------------------------------------------- */
+
+.money-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px 18px;
+}
+
+.money-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.money-field-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-muted, #555);
+  letter-spacing: 0.01em;
+}
+
+.money-field-control {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 6px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.money-field-control:focus-within {
+  border-color: var(--color-info, #3498db);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.18);
+}
+
+.money-field-prefix {
+  padding: 0 2px 0 11px;
+  color: var(--color-muted, #777);
+  font-size: 0.92rem;
+  user-select: none;
+}
+
+.money-field-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 11px 10px 4px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text, #333);
+}
+
+.money-field-hint {
+  margin: 0;
+  font-size: 0.74rem;
+  color: #8a8a8a;
+}
+
+.money-field.is-negative .money-field-control {
+  background: #fff8f7;
+  border-color: #f0c4bf;
+}
+
+.money-field.is-negative .money-field-prefix {
+  color: var(--color-danger, #e74c3c);
+}
+
+/* Section heading that separates assets from liabilities */
+.field-section + .field-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border, #ddd);
+}
+
+.field-section-title {
+  margin: 0 0 12px 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted, #666);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border, #ddd);
+}
+
+.field-section-title.is-liability {
+  color: var(--color-danger, #e74c3c);
+}
+
+/* Read-only computed total, shared by both forms */
+.computed-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f7f9fa, #eef2f4);
+  border: 1px solid var(--border, #ddd);
+}
+
+.computed-total-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-muted, #555);
+}
+
+.computed-total-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text, #222);
+}
+
+.computed-total-delta {
+  width: 100%;
+  font-size: 0.8rem;
+  color: var(--color-muted, #666);
+}
+
+.computed-total-delta .up {
+  color: var(--color-primary, #27ae60);
+  font-weight: 600;
+}
+
+.computed-total-delta .down {
+  color: var(--color-danger, #e74c3c);
+  font-weight: 600;
+}
+
+@media (max-width: 520px) {
+  .money-grid {
+    grid-template-columns: 1fr;
+  }
+}

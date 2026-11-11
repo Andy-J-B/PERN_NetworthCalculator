@@ -1,76 +1,49 @@
-// client/src/components/Input.js
-import React, { useState, useContext } from "react";
+// ---------------------------------------------------------------
+// client/src/components/Input.js – add a new snapshot
+// ---------------------------------------------------------------
+
+import React, { useState, useContext, useCallback } from "react";
 import { NetWorthContext } from "../App";
 import Toast from "./Toast";
+import MoneyField from "./MoneyField";
+import {
+  ASSET_FIELDS,
+  LIABILITY_FIELDS,
+  computeTotal,
+  formatMoney,
+  sanitizeNumericInput,
+} from "../config/fields";
 import "../css/Input.css";
 
-const Input = () => {
-  // ---- initial (empty) values -------------------------------------------------
-  const initVals = {
-    cash_on_hand: "",
-    cash_in_bank: "",
-    accounts_receivable: "",
-    accounts_payable: "",
-    canada_stock: "",
-    us_stock: "",
-  };
+const initVals = () => ({
+  cash_on_hand: "",
+  cash_in_bank: "",
+  accounts_receivable: "",
+  accounts_payable: "",
+  canada_stock: "",
+  us_stock: "",
+});
 
+const Input = () => {
   const [values, setValues] = useState(initVals);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
   const { addNetWorth, apiBase } = useContext(NetWorthContext);
 
-  // ---- update a single field --------------------------------------------------
-  const onChange = (e) => {
-    const { name, value } = e.target;
-    setValues((prev) => ({
-      ...prev,
-      // keep an empty string for a controlled input, otherwise parseFloat
-      [name]: value === "" ? "" : parseFloat(value),
-    }));
-  };
+  const onChange = useCallback((name, raw) => {
+    setValues((prev) => ({ ...prev, [name]: sanitizeNumericInput(raw) }));
+  }, []);
 
-  // ---- compute the total net‑worth on‑the‑fly (for preview) -------------------
-  const computeTotal = () => {
-    const {
-      cash_on_hand = 0,
-      cash_in_bank = 0,
-      accounts_receivable = 0,
-      accounts_payable = 0,
-      canada_stock = 0,
-      us_stock = 0,
-    } = values;
+  const total = computeTotal(values);
+  const hasAnyValue = Object.values(values).some((v) => v !== "" && v !== "0");
 
-    const total =
-      +cash_on_hand +
-      +cash_in_bank +
-      +accounts_receivable +
-      +canada_stock +
-      +us_stock -
-      +accounts_payable;
-
-    return isNaN(total) ? "" : total.toFixed(2);
-  };
-
-  // ---- submit ---------------------------------------------------------------
   const onSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+
     setSubmitting(true);
-
     try {
-      const total_networth = computeTotal();
-
-      const body = {
-        cash_on_hand: values.cash_on_hand,
-        cash_in_bank: values.cash_in_bank,
-        accounts_receivable: values.accounts_receivable,
-        accounts_payable: values.accounts_payable,
-        canada_stock: values.canada_stock,
-        us_stock: values.us_stock,
-        total_networth,
-      };
-
-      console.log(body);
+      const body = { ...values, total_networth: total.toFixed(2) };
 
       const resp = await fetch(`${apiBase}/networth_calculator`, {
         method: "POST",
@@ -78,13 +51,12 @@ const Input = () => {
         body: JSON.stringify(body),
       });
 
-      if (!resp.ok) throw new Error("Server error");
+      if (!resp.ok) throw new Error(`Could not save (HTTP ${resp.status})`);
       const saved = await resp.json();
 
-      // Optimistic UI update – add the newly saved row to the context list
       addNetWorth(saved);
-      setToast({ message: "Snapshot added! 🎉", type: "success" });
-      setValues(initVals); // reset the form
+      setToast({ message: "Snapshot added", type: "success" });
+      setValues(initVals());
     } catch (err) {
       console.error(err);
       setToast({
@@ -98,95 +70,60 @@ const Input = () => {
 
   return (
     <section className="form-container">
-      <h1>Net Worth Calculator</h1>
+      <h2 className="form-title">Add a snapshot</h2>
 
-      <form className="networth-form" onSubmit={onSubmit} noValidate>
-        {/* ---- numeric inputs – same layout, mobile‑friendly ---------- */}
-        <input
-          type="number"
-          name="cash_on_hand"
-          placeholder="Cash on hand"
-          value={values.cash_on_hand}
-          onChange={onChange}
-          step="0.01"
-          min="0"
-          required
-        />
-        <input
-          type="number"
-          name="cash_in_bank"
-          placeholder="Cash in bank"
-          value={values.cash_in_bank}
-          onChange={onChange}
-          step="0.01"
-          min="0"
-          required
-        />
-        <input
-          type="number"
-          name="accounts_receivable"
-          placeholder="Accounts receivable"
-          value={values.accounts_receivable}
-          onChange={onChange}
-          step="0.01"
-          min="0"
-          required
-        />
-        <input
-          type="number"
-          name="accounts_payable"
-          placeholder="Accounts payable"
-          value={values.accounts_payable}
-          onChange={onChange}
-          step="0.01"
-          min="0"
-          required
-        />
-        <input
-          type="number"
-          name="canada_stock"
-          placeholder="Canada stocks"
-          value={values.canada_stock}
-          onChange={onChange}
-          step="0.01"
-          min="0"
-          required
-        />
-        <input
-          type="number"
-          name="us_stock"
-          placeholder="US stocks"
-          value={values.us_stock}
-          onChange={onChange}
-          step="0.01"
-          min="0"
-          required
-        />
+      <form className="networth-form" onSubmit={onSubmit}>
+        <section className="field-section">
+          <h3 className="field-section-title">Assets</h3>
+          <div className="money-grid">
+            {ASSET_FIELDS.map((f) => (
+              <MoneyField
+                key={f.name}
+                field={f}
+                idPrefix="add"
+                value={values[f.name]}
+                onChange={onChange}
+              />
+            ))}
+          </div>
+        </section>
 
-        {/* ---- live preview of the calculated total -------------------- */}
-        <div className="total-preview">
-          <span>Total Net Worth:</span>
-          <strong>
-            {computeTotal()
-              ? `$${Number(computeTotal()).toLocaleString()}`
-              : "—"}
-          </strong>
+        <section className="field-section">
+          <h3 className="field-section-title is-liability">Liabilities</h3>
+          <div className="money-grid">
+            {LIABILITY_FIELDS.map((f) => (
+              <MoneyField
+                key={f.name}
+                field={f}
+                idPrefix="add"
+                value={values[f.name]}
+                onChange={onChange}
+                negative
+              />
+            ))}
+          </div>
+        </section>
+
+        <div className="computed-total">
+          <span className="computed-total-label">Total net worth</span>
+          <strong className="computed-total-value">{formatMoney(total)}</strong>
+          <span className="computed-total-delta">
+            Blank fields are treated as zero.
+          </span>
         </div>
 
-        {/* ---- submit button – shows spinner while saving -------------- */}
-        <button type="submit" disabled={submitting}>
+        <button type="submit" disabled={submitting || !hasAnyValue}>
           {submitting ? (
             <>
               <span className="spinner" />
               Saving…
             </>
           ) : (
-            "Add"
+            "Add snapshot"
           )}
         </button>
       </form>
 
-      {/* ---- toast notification --------------------------------------- */}
       {toast && (
         <Toast
           message={toast.message}

@@ -1,13 +1,20 @@
-/* client/src/css/Toast.css */
+/* ---------------------------------------------------------------
+   client/src/css/Toast.css
+   z-index sits above .nw-modal-overlay (1055) so error toasts raised
+   from inside the open dialog are never hidden behind it.
+   --------------------------------------------------------------- */
 .toast {
   position: fixed;
   bottom: 20px;
   right: 20px;
+  z-index: 1200;
   min-width: 200px;
+  max-width: min(340px, calc(100vw - 40px));
   padding: 12px 18px;
   border-radius: 6px;
   color: #fff;
   font-weight: 500;
+  font-size: 0.9rem;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   animation: slideIn 0.3s ease-out forwards;
 }
