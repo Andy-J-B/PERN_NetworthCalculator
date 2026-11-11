@@ -45,7 +45,7 @@ function App() {
   // Mutations shared with children via context
   // -----------------------------------------------------------------
   const addNetWorth = (newRow) =>
-    setNetworths((s) => [...s, newRow].sort(sortByDate));
+    setNetworths((s) => sortByDate([...s, newRow]));
 
   const deleteNetWorth = (id) =>
     setNetworths((s) => s.filter((row) => row.networth_id !== id));
@@ -54,9 +54,9 @@ function App() {
     setNetworths((s) =>
       sortByDate(
         s.map((row) =>
-          row.networth_id === updatedRow.networth_id ? updatedRow : row
-        )
-      )
+          row.networth_id === updatedRow.networth_id ? updatedRow : row,
+        ),
+      ),
     );
 
   const refresh = async () => {
@@ -114,6 +114,7 @@ function App() {
 
 /** Keep the table in chronological order after any local mutation. */
 function sortByDate(rows) {
+  if (!Array.isArray(rows)) return [];
   return [...rows].sort((a, b) => {
     const d = new Date(a.today_date) - new Date(b.today_date);
     return Number.isNaN(d) ? 0 : d || a.networth_id - b.networth_id;
